@@ -1,0 +1,53 @@
+name: Generate and Obfuscate Worker Script
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 * * * *'  # 每小时执行一次
+  push:
+    branches:
+      - main  # 当main分支有推送时也触发
+
+jobs:
+  build-and-obfuscate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Obfuscator
+        run: npm install javascript-obfuscator
+
+      - name: Obfuscate source code
+      run: |
+        npx javascript-obfuscator "明文源码.js" --output "./少年你相信光吗.js" --compact true --control-flow-flattening true --control-flow-flattening-threshold 0.1 --string-array true --string-array-threshold 0.75
+
+      - name: Generate version info
+        run: |
+          echo "BUILD_TIME=$(date -u)" >> $GITHUB_ENV
+          echo "COMMIT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Add version info to obfuscated file
+        run: |
+          # 在混淆文件开头添加版本信息注释
+          echo "// Build time: ${{ env.BUILD_TIME }}" | cat - "少年你相信光吗" > temp && mv temp "少年你相信光吗"
+          echo "// Commit hash: ${{ env.COMMIT_HASH }}" | cat - "少年你相信光吗" > temp && mv temp "少年你相信光吗"
+          echo "// GitHub Actions Run ID: ${{ github.run_id }}" | cat - "少年你相信光吗" > temp && mv temp "少年你相信光吗"
+
+      - name: Commit and push the obfuscated file
+        run: |
+          git config --global user.name 'GitHub Actions Bot'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add '少年你相信光吗'
+          if git diff --staged --quiet; then
+            echo "No changes to commit, the obfuscated file is already up-to-date."
+          else
+            git commit -m "build: Generate and obfuscate worker script\n\nBuild time: ${{ env.BUILD_TIME }}\nCommit: ${{ env.COMMIT_HASH }}"
+            git push
+          fi

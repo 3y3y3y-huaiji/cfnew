@@ -1,0 +1,11 @@
+# wrangler.toml
+name = "buddha-jumps-over-thewall"  # 与你的Worker名称一致
+compatibility_date = "2025-10-27"  # 与运行时兼容日期一致
+
+# 入口文件（混淆cate.yml生成的混淆文件）
+main = "少年你相信光吗"
+
+# KV存储绑定（使用你的KV ID）
+[[kv_namespaces]]
+binding = "C"  # 必须与README要求的变量名保持一致
+id = "b70dd1ed392149e4926e81a1ed245e29"  # 你的KV命名空间ID

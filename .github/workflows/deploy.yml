@@ -1,0 +1,42 @@
+name: Deploy Cloudflare Worker
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '少年你相信光吗.js'
+      - '明文源码.js'
+  schedule:
+    - cron: '15 * * * *'  # 每小时过15分钟执行，确保在混淆之后执行
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install wrangler
+        run: npm install wrangler --save-dev
+
+      - name: Check if obfuscated file exists
+        run: |
+          if [ ! -f "少年你相信光吗" ]; then
+            echo "Error: Obfuscated file '少年你相信光吗' not found!"
+            exit 1
+          fi
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          command: deploy --name buddha-jumps-over-thewall --compatibility-date 2025-10-27
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
