@@ -20,18 +20,18 @@ let kvStore = null;
 let kvConfig = {};
 
 const regionMapping = {
-    'US': ['馃嚭馃嚫 缇庡浗', 'US', 'United States'],
-    'SG': ['馃嚫馃嚞 鏂板姞鍧?, 'SG', 'Singapore'],
-    'JP': ['馃嚡馃嚨 鏃ユ湰', 'JP', 'Japan'],
-    'HK': ['馃嚟馃嚢 棣欐腐', 'HK', 'Hong Kong'],
-    'KR': ['馃嚢馃嚪 闊╁浗', 'KR', 'South Korea'],
-    'DE': ['馃嚛馃嚜 寰峰浗', 'DE', 'Germany'],
-    'SE': ['馃嚫馃嚜 鐟炲吀', 'SE', 'Sweden'],
-    'NL': ['馃嚦馃嚤 鑽峰叞', 'NL', 'Netherlands'],
-    'FI': ['馃嚝馃嚠 鑺叞', 'FI', 'Finland'],
-    'GB': ['馃嚞馃嚙 鑻卞浗', 'GB', 'United Kingdom'],
-    'Oracle': ['鐢查鏂?, 'Oracle'],
-    'DigitalOcean': ['鏁扮爜娴?, 'DigitalOcean'],
+    'US': ['🇺🇸 美国', 'US', 'United States'],
+    'SG': ['🇸🇬 新加坡', 'SG', 'Singapore'],
+    'JP': ['🇯🇵 日本', 'JP', 'Japan'],
+    'HK': ['🇭🇰 香港', 'HK', 'Hong Kong'],
+    'KR': ['🇰🇷 韩国', 'KR', 'South Korea'],
+    'DE': ['🇩🇪 德国', 'DE', 'Germany'],
+    'SE': ['🇸🇪 瑞典', 'SE', 'Sweden'],
+    'NL': ['🇳🇱 荷兰', 'NL', 'Netherlands'],
+    'FI': ['🇫🇮 芬兰', 'FI', 'Finland'],
+    'GB': ['🇬🇧 英国', 'GB', 'United Kingdom'],
+    'Oracle': ['甲骨文', 'Oracle'],
+    'DigitalOcean': ['数字海', 'DigitalOcean'],
     'Vultr': ['Vultr', 'Vultr'],
     'Multacom': ['Multacom', 'Multacom']
 };
@@ -1799,9 +1799,9 @@ async function handleSubscriptionPage(request, user = null) {
                 const regionMatch = document.getElementById('regionMatch');
                 
                 const regionNames = {
-                    'US': '馃嚭馃嚫 缇庡浗', 'SG': '馃嚫馃嚞 鏂板姞鍧?, 'JP': '馃嚡馃嚨 鏃ユ湰', 'HK': '馃嚟馃嚢 棣欐腐',
-                    'KR': '馃嚢馃嚪 闊╁浗', 'DE': '馃嚛馃嚜 寰峰浗', 'SE': '馃嚫馃嚜 鐟炲吀', 'NL': '馃嚦馃嚤 鑽峰叞',
-                    'FI': '馃嚝馃嚠 鑺叞', 'GB': '馃嚞馃嚙 鑻卞浗'
+                    'US': '🇺🇸 美国', 'SG': '🇸🇬 新加坡', 'JP': '🇯🇵 日本', 'HK': '🇭🇰 香港',
+                    'KR': '🇰🇷 韩国', 'DE': '🇩🇪 德国', 'SE': '🇸🇪 瑞典', 'NL': '🇳🇱 荷兰',
+                      'FI': '🇫🇮 芬兰', 'GB': '🇬🇧 英国'
                 };
                 
                 let detectedRegion = 'US'; // 榛樿鍊?                let isCustomIPMode = false;
