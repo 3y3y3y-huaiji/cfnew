@@ -1,0 +1,22 @@
+{
+  "timestamp": "2025-10-29T04:59:13.047Z",
+  "input": {
+    "file": "D:\\Users\\Administrator\\Documents\\佛跳墙项目\\cfnew-main\\build\\merged.js",
+    "size": 125795,
+    "lastModified": "2025-10-29T04:59:09.169Z"
+  },
+  "output": {
+    "file": "D:\\Users\\Administrator\\Documents\\佛跳墙项目\\cfnew-main\\build\\worker.js",
+    "size": 375713,
+    "lastModified": "2025-10-29T04:59:12.986Z"
+  },
+  "compression": {
+    "ratio": "-198.67%",
+    "savedBytes": -249918
+  },
+  "environment": {
+    "nodeVersion": "v24.10.0",
+    "platform": "win32",
+    "arch": "x64"
+  }
+}

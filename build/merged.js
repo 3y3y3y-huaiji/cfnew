@@ -15,7 +15,7 @@ let currentWorkerRegion = '';
 let manualWorkerRegion = '';
 let preferredIPsURL = '';
 
-// KV瀛樺偍鐩稿叧鍙橀噺
+// KV存储相关变量
 let kvStore = null;
 let kvConfig = {};
 
@@ -108,7 +108,7 @@ async function initKVStore(env) {
             kvStore = env.C;
             await loadKVConfig();
         } catch (error) {
-            console.error('KV鍒濆鍖栧け璐ワ紝灏嗙鐢↘V鍔熻兘:', error);
+            console.error('KV初始化失败，无法使用KV功能:', error);
             kvStore = null;
         }
     }
@@ -123,7 +123,7 @@ async function loadKVConfig() {
             kvConfig = JSON.parse(configData);
         }
     } catch (error) {
-        console.error('鍔犺浇KV閰嶇疆澶辫触:', error);
+        console.error('加载KV配置失败:', error);
         kvConfig = {};
     }
 }
@@ -134,12 +134,13 @@ async function saveKVConfig() {
     try {
         await kvStore.put('c', JSON.stringify(kvConfig));
     } catch (error) {
-        console.error('淇濆瓨KV閰嶇疆澶辫触:', error);
+        console.error('保存KV配置失败:', error);
     }
 }
 
 function getConfigValue(key, defaultValue = '') {
-    // 浼樺厛浣跨敤KV閰嶇疆锛岀劧鍚庝娇鐢ㄧ幆澧冨彉閲?    if (kvConfig[key] !== undefined) {
+    // 优先使用KV配置，然后使用环境变量
+    if (kvConfig[key] !== undefined) {
         return kvConfig[key];
     }
     return defaultValue;
@@ -218,16 +219,16 @@ async function getBestBackupIP(workerRegion = '') {
 
 function getNearbyRegions(region) {
     const nearbyMap = {
-        'US': ['SG', 'JP', 'HK', 'KR'], // 缇庡浗 -> 浜氬お鍦板尯
-        'SG': ['JP', 'HK', 'KR', 'US'], // 鏂板姞鍧?-> 浜氬お鍦板尯
-        'JP': ['SG', 'HK', 'KR', 'US'], // 鏃ユ湰 -> 浜氬お鍦板尯
-        'HK': ['SG', 'JP', 'KR', 'US'], // 棣欐腐 -> 浜氬お鍦板尯
-        'KR': ['JP', 'HK', 'SG', 'US'], // 闊╁浗 -> 浜氬お鍦板尯
-        'DE': ['NL', 'GB', 'SE', 'FI'], // 寰峰浗 -> 娆ф床鍦板尯
-        'SE': ['DE', 'NL', 'FI', 'GB'], // 鐟炲吀 -> 鍖楁鍦板尯
-        'NL': ['DE', 'GB', 'SE', 'FI'], // 鑽峰叞 -> 瑗挎鍦板尯
-        'FI': ['SE', 'DE', 'NL', 'GB'], // 鑺叞 -> 鍖楁鍦板尯
-        'GB': ['DE', 'NL', 'SE', 'FI']  // 鑻卞浗 -> 瑗挎鍦板尯
+        'US': ['SG', 'JP', 'HK', 'KR'], // 美国 -> 亚太地区
+        'SG': ['JP', 'HK', 'KR', 'US'], // 新加坡 -> 亚太地区
+        'JP': ['SG', 'HK', 'KR', 'US'], // 日本 -> 亚太地区
+        'HK': ['SG', 'JP', 'KR', 'US'], // 香港 -> 亚太地区
+        'KR': ['JP', 'HK', 'SG', 'US'], // 韩国 -> 亚太地区
+        'DE': ['NL', 'GB', 'SE', 'FI'], // 德国 -> 西欧地区
+        'SE': ['DE', 'NL', 'FI', 'GB'], // 瑞典 -> 北欧地区
+        'NL': ['DE', 'GB', 'SE', 'FI'], // 荷兰 -> 西欧地区
+        'FI': ['SE', 'DE', 'NL', 'GB'], // 芬兰 -> 北欧地区
+        'GB': ['DE', 'NL', 'SE', 'FI']  // 英国 -> 西欧地区
     };
     
     return nearbyMap[region] || [];
@@ -286,7 +287,7 @@ function parseAddressAndPort(input) {
 export default {
 	async fetch(request, env, ctx) {
 		try {
-			// 鍒濆鍖朘V瀛樺偍
+			// 初始化KV存储
 			await initKVStore(env);
 			
 			authToken = (env.u || env.U || authToken).toLowerCase();
@@ -295,7 +296,7 @@ export default {
 			const customIP = getConfigValue('p', env.p || env.P);
 			let useCustomIP = false;
 			
-			// 妫€鏌ユ槸鍚︽墜鍔ㄦ寚瀹氫簡wk鍦板尯 (浼樺厛浣跨敤KV閰嶇疆)
+			// 检查是否手动指定了wk区域 (优先使用KV配置)
 			const manualRegion = getConfigValue('wk', env.wk || env.WK);
 			if (manualRegion && manualRegion.trim()) {
 				manualWorkerRegion = manualRegion.trim().toUpperCase();
@@ -337,7 +338,8 @@ export default {
 				}
 			}
 
-			// 浼樺厛浣跨敤KV閰嶇疆锛岀劧鍚庝娇鐢ㄧ幆澧冨彉閲?			const customPreferred = getConfigValue('yx', env.yx || env.YX);
+			// 优先使用KV配置，然后使用环境变量
+			const customPreferred = getConfigValue('yx', env.yx || env.YX);
 			if (customPreferred) {
 				try {
 					const preferredList = customPreferred.split(',').map(item => item.trim()).filter(item => item);
@@ -345,7 +347,7 @@ export default {
 					customPreferredDomains = [];
 					
 					preferredList.forEach(item => {
-						// 妫€鏌ユ槸鍚﹀寘鍚妭鐐瑰悕绉?(#)
+						// 检查是否包含节点名称(#)
 						let nodeName = '';
 						let addressPart = item;
 						
@@ -357,8 +359,9 @@ export default {
 						
 						const { address, port } = parseAddressAndPort(addressPart);
 						
-						// 濡傛灉娌℃湁璁剧疆鑺傜偣鍚嶇О锛屼娇鐢ㄩ粯璁ゆ牸寮?						if (!nodeName) {
-							nodeName = '鑷畾涔変紭閫?' + address + (port ? ':' + port : '');
+						// 如果没有设置节点名称，使用默认格式
+						if (!nodeName) {
+							nodeName = '自定义优先' + address + (port ? ':' + port : '');
 						}
 						
 						if (isValidIP(address)) {
@@ -386,7 +389,8 @@ export default {
 				enableSocksDowngrade = true;
 			}
 
-			// 浼樺厛浣跨敤KV閰嶇疆锛岀劧鍚庝娇鐢ㄧ幆澧冨彉閲?			const dkbyControl = getConfigValue('dkby', env.dkby || env.DKBY);
+			// 优先使用KV配置，然后使用环境变量
+			const dkbyControl = getConfigValue('dkby', env.dkby || env.DKBY);
 			if (dkbyControl && dkbyControl.toLowerCase() === 'yes') {
 				disableNonTLS = true;
 			}
@@ -396,10 +400,10 @@ export default {
 				disablePreferred = true;
 			}
 
-			// 浼樺厛浣跨敤KV閰嶇疆锛岀劧鍚庝娇鐢ㄧ幆澧冨彉閲忥紝濡傛灉閮芥病鏈夊垯浣跨敤榛樿URL
+			// 优先使用KV配置，然后使用环境变量，如果都没有则使用默认URL
 			preferredIPsURL = getConfigValue('yxURL', env.yxURL || env.YXURL) || 'https://raw.githubusercontent.com/qwer-search/bestip/refs/heads/main/kejilandbestip.txt';
 			
-			// 濡傛灉yxURL涓嶆槸榛樿鍊硷紝娓呯┖鍩熷悕浣嗕繚鐣檅ackupIPs浣滀负鍚庡閫夐」
+			// 如果yxURL不是默认值，清空域名但保留backupIPs作为后备选项
 			const defaultURL = 'https://raw.githubusercontent.com/qwer-search/bestip/refs/heads/main/kejilandbestip.txt';
 			if (preferredIPsURL !== defaultURL) {
 				directDomains.length = 0;
@@ -413,46 +417,47 @@ export default {
 				return await handleWsRequest(request);
 			}
 			
-			// 閰嶇疆绠＄悊API璺敱锛堟敮鎸丟ET鍜孭OST锛?			if (url.pathname.includes('/api/config')) {
+			// 配置管理API路由（仅支持GET和POST）
+			if (url.pathname.includes('/api/config')) {
 				const pathParts = url.pathname.split('/').filter(p => p);
-				// 鏌ユ壘UUID - 搴旇鍦?api 涔嬪墠
+				// 查找UUID - 应该在api之前
 				const apiIndex = pathParts.indexOf('api');
 				if (apiIndex > 0) {
 					const user = pathParts[apiIndex - 1];
 					if (isValidFormat(user) && user === authToken) {
 						return await handleConfigAPI(request);
 					} else if (isValidFormat(user)) {
-						return new Response(JSON.stringify({ error: 'UUID閿欒' }), { 
+						return new Response(JSON.stringify({ error: 'UUID错误' }), { 
 							status: 403,
 							headers: { 'Content-Type': 'application/json' }
 						});
 					}
 				}
-				// 濡傛灉璺緞鏍煎紡涓嶆纭紝杩斿洖JSON閿欒
-				return new Response(JSON.stringify({ error: '鏃犳晥鐨凙PI璺緞' }), { 
+				// 如果路径格式不正确，返回JSON错误
+				return new Response(JSON.stringify({ error: '无效的API路径' }), { 
 					status: 404,
 					headers: { 'Content-Type': 'application/json' }
 				});
 			}
 			
-			// 浼橀€塈P绠＄悊API璺敱
+			// 优先IP管理API路由
 			if (url.pathname.includes('/api/preferred-ips')) {
 				const pathParts = url.pathname.split('/').filter(p => p);
-				// 鏌ユ壘UUID - 搴旇鍦?api 涔嬪墠
+				// 查找UUID - 应该在api之前
 				const apiIndex = pathParts.indexOf('api');
 				if (apiIndex > 0) {
 					const user = pathParts[apiIndex - 1];
 					if (isValidFormat(user) && user === authToken) {
 						return await handlePreferredIPsAPI(request);
 					} else if (isValidFormat(user)) {
-						return new Response(JSON.stringify({ error: 'UUID閿欒' }), { 
+						return new Response(JSON.stringify({ error: 'UUID错误' }), { 
 							status: 403,
 							headers: { 'Content-Type': 'application/json' }
 						});
 					}
 				}
-				// 濡傛灉璺緞鏍煎紡涓嶆纭紝杩斿洖JSON閿欒
-				return new Response(JSON.stringify({ error: '鏃犳晥鐨凙PI璺緞' }), { 
+				// 如果路径格式不正确，返回JSON错误
+				return new Response(JSON.stringify({ error: '无效的API路径' }), { 
 					status: 404,
 					headers: { 'Content-Type': 'application/json' }
 				});
@@ -460,13 +465,14 @@ export default {
 			
 			if (request.method === 'GET') {
 				if (url.pathname === '/region') {
-					// 浼樺厛浣跨敤KV閰嶇疆锛岀劧鍚庝娇鐢ㄧ幆澧冨彉閲?					const customIP = getConfigValue('p', env.p || env.P);
+					// 优先使用KV配置，然后使用环境变量
+					const customIP = getConfigValue('p', env.p || env.P);
 					const manualRegion = getConfigValue('wk', env.wk || env.WK);
 					
 					if (manualRegion && manualRegion.trim()) {
 						return new Response(JSON.stringify({
 							region: manualRegion.trim().toUpperCase(),
-							detectionMethod: '鎵嬪姩鎸囧畾鍦板尯',
+							detectionMethod: '手动指定区域',
 							manualRegion: manualRegion.trim().toUpperCase(),
 							timestamp: new Date().toISOString()
 						}), {
@@ -475,7 +481,7 @@ export default {
 					} else if (customIP && customIP.trim()) {
 						return new Response(JSON.stringify({
 							region: 'CUSTOM',
-							detectionMethod: '鑷畾涔塒roxyIP妯″紡',
+							detectionMethod: '自定义ProxyIP模式',
 							customIP: customIP,
 							timestamp: new Date().toISOString()
 						}), {
@@ -485,7 +491,7 @@ export default {
 						const detectedRegion = await detectWorkerRegion(request);
 						return new Response(JSON.stringify({
 							region: detectedRegion,
-							detectionMethod: 'API妫€娴?,
+							detectionMethod: 'API检测',
 							timestamp: new Date().toISOString()
 						}), {
 							headers: { 'Content-Type': 'application/json' }
@@ -498,7 +504,7 @@ export default {
 						const testRegion = await detectWorkerRegion(request);
 						return new Response(JSON.stringify({
 							detectedRegion: testRegion,
-							message: 'API娴嬭瘯瀹屾垚',
+							message: 'API测试完成',
 							timestamp: new Date().toISOString()
 						}), {
 							headers: { 'Content-Type': 'application/json' }
@@ -506,7 +512,7 @@ export default {
 					} catch (error) {
 						return new Response(JSON.stringify({
 							error: error.message,
-							message: 'API娴嬭瘯澶辫触'
+							message: 'API测试失败'
 						}), {
 							status: 500,
 							headers: { 'Content-Type': 'application/json' }
@@ -521,7 +527,7 @@ export default {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>缁堢</title>
+    <title>终端</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -664,7 +670,7 @@ export default {
     <div class="matrix-bg"></div>
     <div class="matrix-rain"></div>
     <div class="matrix-code-rain" id="matrixCodeRain"></div>
-    <div class="matrix-text">缁堢</div>
+    <div class="matrix-text">终端</div>
     <div class="terminal">
         <div class="terminal-header">
             <div class="terminal-buttons">
@@ -672,24 +678,24 @@ export default {
                 <div class="terminal-button"></div>
                 <div class="terminal-button"></div>
             </div>
-            <div class="terminal-title">缁堢</div>
+            <div class="terminal-title">终端</div>
         </div>
         <div class="terminal-body" id="terminalBody">
             <div class="terminal-line">
                 <span class="terminal-prompt">root:~$</span>
-                <span class="terminal-output">鎭枩浣犳潵鍒拌繖</span>
+                <span class="terminal-output">欢迎你来到这里</span>
             </div>
             <div class="terminal-line">
                 <span class="terminal-prompt">root:~$</span>
-                <span class="terminal-output">璇疯緭鍏ヤ綘U鍙橀噺鐨勫€?/span>
+                <span class="terminal-output">请输入你U变量的值</span>
             </div>
             <div class="terminal-line">
                 <span class="terminal-prompt">root:~$</span>
-                <span class="terminal-output">鍛戒护: connect [UUID]</span>
+                <span class="terminal-output">命令: connect [UUID]</span>
             </div>
             <div class="terminal-line">
                 <span class="terminal-prompt">root:~$</span>
-                <input type="text" class="terminal-input" id="uuidInput" placeholder="杈撳叆U鍙橀噺鐨勫唴瀹瑰苟涓斿洖杞?.." autofocus>
+                <input type="text" class="terminal-input" id="uuidInput" placeholder="输入U变量的内容并且回车.." autofocus>
                 <span class="terminal-cursor"></span>
             </div>
         </div>
@@ -770,16 +776,16 @@ export default {
                 addTerminalLine('connect ' + uuid, 'output');
                 
                 if (isValidUUID(uuid)) {
-                    addTerminalLine('姝ｅ湪鍏ヤ镜...', 'output');
+                    addTerminalLine('正在加入...', 'output');
                     setTimeout(() => {
-                        addTerminalLine('杩炴帴鎴愬姛锛佽繑鍥炵粨鏋?..', 'success');
+                        addTerminalLine('连接成功！返回结果..', 'success');
                         setTimeout(() => {
                             window.location.href = '/' + uuid;
                         }, 1000);
                     }, 500);
                 } else {
-                    addTerminalLine('閿欒: 鏃犳晥鐨刄UID鏍煎紡', 'error');
-                    addTerminalLine('璇烽噸鏂拌緭鍏ユ湁鏁堢殑UUID', 'output');
+                    addTerminalLine('错误: 无效的UUID格式', 'error');
+                    addTerminalLine('请重新输入有效的UUID', 'output');
                 }
                 
                 input.value = '';
@@ -807,7 +813,7 @@ export default {
 						if (user === authToken) {
 							return await handleSubscriptionPage(request, user);
 						} else {
-							return new Response(JSON.stringify({ error: 'UUID閿欒 璇锋敞鎰忓彉閲忓悕绉版槸u涓嶆槸uuid' }), { 
+							return new Response(JSON.stringify({ error: 'UUID错误 请注意变量名是u不是uuid' }), { 
 								status: 403,
 								headers: { 'Content-Type': 'application/json' }
 							});
@@ -822,7 +828,7 @@ export default {
 							if (user === authToken) {
 								return await handleSubscriptionRequest(request, user, url);
 							} else {
-								return new Response(JSON.stringify({ error: 'UUID閿欒' }), { 
+								return new Response(JSON.stringify({ error: 'UUID错误' }), { 
 									status: 403,
 									headers: { 'Content-Type': 'application/json' }
 								});
@@ -852,11 +858,11 @@ async function handleSubscriptionRequest(request, user, url = null) {
     const target = url.searchParams.get('target') || 'base64';
 
     if (currentWorkerRegion === 'CUSTOM') {
-        const nativeList = [{ ip: workerDomain, isp: '鍘熺敓鍦板潃' }];
+        const nativeList = [{ ip: workerDomain, isp: '原生地址' }];
         finalLinks.push(...generateLinksFromSource(nativeList, user, workerDomain));
     } else {
         try {
-            const nativeList = [{ ip: workerDomain, isp: '鍘熺敓鍦板潃' }];
+            const nativeList = [{ ip: workerDomain, isp: '原生地址' }];
             finalLinks.push(...generateLinksFromSource(nativeList, user, workerDomain));
         } catch (error) {
             if (!currentWorkerRegion) {
@@ -870,7 +876,7 @@ async function handleSubscriptionRequest(request, user, url = null) {
                 const backupList = [{ ip: fallbackAddress, isp: 'ProxyIP-' + currentWorkerRegion }];
                 finalLinks.push(...generateLinksFromSource(backupList, user, workerDomain));
             } else {
-                const nativeList = [{ ip: workerDomain, isp: '鍘熺敓鍦板潃' }];
+                const nativeList = [{ ip: workerDomain, isp: '原生地址' }];
                 finalLinks.push(...generateLinksFromSource(nativeList, user, workerDomain));
             }
         }
@@ -880,7 +886,7 @@ async function handleSubscriptionRequest(request, user, url = null) {
     
     if (disablePreferred) {
     } else if (hasCustomPreferred) {
-        // 浣跨敤yx閰嶇疆鐨勪紭閫塈P锛堝寘鍚獳PI娣诲姞鐨勶級
+        // 使用yx配置的优选IP（包含API添加的）
         if (customPreferredIPs.length > 0) {
             finalLinks.push(...generateLinksFromSource(customPreferredIPs, user, workerDomain));
         }
@@ -938,7 +944,7 @@ async function handleSubscriptionRequest(request, user, url = null) {
     }
 
     if (finalLinks.length === 0) {
-        const errorRemark = "鎵€鏈夎妭鐐硅幏鍙栧け璐?;
+        const errorRemark = "所有节点获取失败";
         const proto = atob('dmxlc3M=');
         const errorLink = `${proto}://00000000-0000-0000-0000-000000000000@127.0.0.1:80?encryption=none&security=none&type=ws&host=error.com&path=%2F#${encodeURIComponent(errorRemark)}`;
         finalLinks.push(errorLink);
@@ -985,7 +991,7 @@ async function handleSubscriptionRequest(request, user, url = null) {
 }
 
 function generateLinksFromSource(list, user, workerDomain) {
-    // Cloudflare鏀寔鐨勭鍙?    const CF_HTTP_PORTS = [80, 8080, 8880, 2052, 2082, 2086, 2095];
+    // Cloudflare支持的端口    const CF_HTTP_PORTS = [80, 8080, 8880, 2052, 2082, 2086, 2095];
     const CF_HTTPS_PORTS = [443, 2053, 2083, 2087, 2096, 8443];
     
     const defaultHttpsPorts = [443];
@@ -1001,21 +1007,23 @@ function generateLinksFromSource(list, user, workerDomain) {
         let portsToGenerate = [];
         
         if (item.port) {
-            // 鏈夋寚瀹氱鍙ｆ椂锛屾牴鎹鍙ｇ被鍨嬪喅瀹氱敓鎴怲LS鎴栭潪TLS
+            // 有指定端口时，根据端口类型决定生成TLS或非TLS
             const port = item.port;
             
             if (CF_HTTPS_PORTS.includes(port)) {
-                // CF HTTPS绔彛锛屽彧鐢熸垚TLS鑺傜偣
+                // CF HTTPS端口，只生成TLS节点
                 portsToGenerate.push({ port: port, tls: true });
             } else if (CF_HTTP_PORTS.includes(port)) {
-                // CF HTTP绔彛锛屽彧鐢熸垚闈濼LS鑺傜偣锛堥櫎闈炲惎鐢ㄤ簡disableNonTLS锛?                if (!disableNonTLS) {
+                // CF HTTP端口，只生成非TLS节点（除非禁用了disableNonTLS）
+                if (!disableNonTLS) {
                     portsToGenerate.push({ port: port, tls: false });
                 }
             } else {
-                // 闈濩F鏍囧噯绔彛锛屽彧鐢熸垚TLS鑺傜偣锛圚TTP浼氳CF鎷︽埅锛?                portsToGenerate.push({ port: port, tls: true });
+                // 非CF标准端口，只生成TLS节点（HTTP会被CF拦截）
+                portsToGenerate.push({ port: port, tls: true });
             }
         } else {
-            // 娌℃湁鎸囧畾绔彛鏃讹紝浣跨敤榛樿绔彛
+            // 没有指定端口时，使用默认端口
             defaultHttpsPorts.forEach(port => {
                 portsToGenerate.push({ port: port, tls: true });
             });
@@ -1024,10 +1032,10 @@ function generateLinksFromSource(list, user, workerDomain) {
             });
         }
 
-        // 鐢熸垚鑺傜偣
+        // 生成节点
         portsToGenerate.forEach(({ port, tls }) => {
             if (tls) {
-                // TLS鑺傜偣
+                // TLS节点
                 const wsNodeName = `${nodeNameBase}-${port}-WS-TLS`;
                 const wsParams = new URLSearchParams({ 
                     encryption: 'none', 
@@ -1040,7 +1048,7 @@ function generateLinksFromSource(list, user, workerDomain) {
                 });
                 links.push(`${proto}://${user}@${safeIP}:${port}?${wsParams.toString()}#${encodeURIComponent(wsNodeName)}`);
             } else {
-                // 闈濼LS鑺傜偣
+                // 非TLS节点
                 const wsNodeName = `${nodeNameBase}-${port}-WS`;
                 const wsParams = new URLSearchParams({
                     encryption: 'none',
@@ -1088,7 +1096,7 @@ async function fetchAndParseWetest(url) {
         const html = await response.text();
         const results = [];
         const rowRegex = /<tr[\s\S]*?<\/tr>/g;
-        const cellRegex = /<td data-label="绾胯矾鍚嶇О">(.+?)<\/td>[\s\S]*?<td data-label="浼橀€夊湴鍧€">([\d.:a-fA-F]+)<\/td>/;
+        const cellRegex = /<td data-label="线路名称">(.+?)<\/td>[\s\S]*?<td data-label="优选地址">([\d.:a-fA-F]+)<\/td>/;
 
         let match;
         while ((match = rowRegex.exec(html)) !== null) {
@@ -1557,14 +1565,14 @@ async function handleSubscriptionPage(request, user = null) {
     <div class="matrix-bg"></div>
     <div class="matrix-rain"></div>
     <div class="matrix-code-rain" id="matrixCodeRain"></div>
-    <div class="matrix-text">浠ｇ悊璁㈤槄涓績 v1.1</div>
+    <div class="matrix-text">代理订阅中心 v1.1</div>
     <div class="container">
         <div class="header">
-            <h1 class="title">浠ｇ悊璁㈤槄涓績</h1>
-            <p class="subtitle">澶氬鎴风鏀寔 鈥?鏅鸿兘浼橀€?鈥?涓€閿敓鎴?/p>
+            <h1 class="title">代理订阅中心</h1>
+            <p class="subtitle">多账户支持 — 智能优选 — 一键生成</p>
         </div>
         <div class="card">
-            <h2 class="card-title">[ 閫夋嫨瀹㈡埛绔?]</h2>
+            <h2 class="card-title">[ 选择客户端 ]</h2>
             <div class="client-grid">
                 <button class="client-btn" onclick="generateClientLink(atob('Y2xhc2g='))">CLASH</button>
                 <button class="client-btn" onclick="generateClientLink(atob('c3VyZ2U='))">SURGE</button>
@@ -1575,129 +1583,129 @@ async function handleSubscriptionPage(request, user = null) {
             <div class="subscription-url" id="clientSubscriptionUrl"></div>
         </div>
         <div class="card">
-            <h2 class="card-title">[ 蹇€熻幏鍙?]</h2>
-            <button class="generate-btn" onclick="getBase64Subscription()">鑾峰彇璁㈤槄閾炬帴</button>
+            <h2 class="card-title">[ 快速获取 ]</h2>
+            <button class="generate-btn" onclick="getBase64Subscription()">获取订阅链接</button>
             <div class="subscription-url" id="base64SubscriptionUrl"></div>
         </div>
         <div class="card">
-            <h2 class="card-title">[ 绯荤粺鐘舵€?]</h2>
+            <h2 class="card-title">[ 系统状态 ]</h2>
             <div id="systemStatus" style="margin: 20px 0; padding: 15px; background: rgba(0, 20, 0, 0.8); border: 2px solid #00ff00; box-shadow: 0 0 20px rgba(0, 255, 0, 0.3), inset 0 0 15px rgba(0, 255, 0, 0.1); position: relative; overflow: hidden;">
-                <div style="color: #00ff00; margin-bottom: 15px; font-weight: bold; text-shadow: 0 0 5px #00ff00;">[ 绯荤粺妫€娴嬩腑... ]</div>
-                <div id="regionStatus" style="margin: 8px 0; color: #00ff00; font-family: 'Courier New', monospace; text-shadow: 0 0 3px #00ff00;">Worker鍦板尯: 妫€娴嬩腑...</div>
-                <div id="geoInfo" style="margin: 8px 0; color: #00aa00; font-family: 'Courier New', monospace; font-size: 0.9rem; text-shadow: 0 0 3px #00aa00;">妫€娴嬫柟寮? 妫€娴嬩腑...</div>
-                <div id="backupStatus" style="margin: 8px 0; color: #00ff00; font-family: 'Courier New', monospace; text-shadow: 0 0 3px #00ff00;">ProxyIP鐘舵€? 妫€娴嬩腑...</div>
-                <div id="currentIP" style="margin: 8px 0; color: #00ff00; font-family: 'Courier New', monospace; text-shadow: 0 0 3px #00ff00;">褰撳墠浣跨敤IP: 妫€娴嬩腑...</div>
-                <div id="regionMatch" style="margin: 8px 0; color: #00ff00; font-family: 'Courier New', monospace; text-shadow: 0 0 3px #00ff00;">鍦板尯鍖归厤: 妫€娴嬩腑...</div>
-                <div id="selectionLogic" style="margin: 8px 0; color: #00aa00; font-family: 'Courier New', monospace; font-size: 0.9rem; text-shadow: 0 0 3px #00aa00;">閫夋嫨閫昏緫: 鍚屽湴鍖?鈫?閭昏繎鍦板尯 鈫?鍏朵粬鍦板尯</div>
+                <div style="color: #00ff00; margin-bottom: 15px; font-weight: bold; text-shadow: 0 0 5px #00ff00;">[ 系统检测中... ]</div>
+                <div id="regionStatus" style="margin: 8px 0; color: #00ff00; font-family: 'Courier New', monospace; text-shadow: 0 0 3px #00ff00;">Worker区域: 检测中...</div>
+                <div id="geoInfo" style="margin: 8px 0; color: #00aa00; font-family: 'Courier New', monospace; font-size: 0.9rem; text-shadow: 0 0 3px #00aa00;">检测方式: 检测中...</div>
+                <div id="backupStatus" style="margin: 8px 0; color: #00ff00; font-family: 'Courier New', monospace; text-shadow: 0 0 3px #00ff00;">ProxyIP状态: 检测中...</div>
+                <div id="currentIP" style="margin: 8px 0; color: #00ff00; font-family: 'Courier New', monospace; text-shadow: 0 0 3px #00ff00;">当前使用IP: 检测中...</div>
+                <div id="regionMatch" style="margin: 8px 0; color: #00ff00; font-family: 'Courier New', monospace; text-shadow: 0 0 3px #00ff00;">区域匹配: 检测中...</div>
+                <div id="selectionLogic" style="margin: 8px 0; color: #00aa00; font-family: 'Courier New', monospace; font-size: 0.9rem; text-shadow: 0 0 3px #00aa00;">选择逻辑: 同地区 → 邻近地区 → 其他地区</div>
             </div>
         </div>
         <div class="card" id="configCard" style="display: none;">
-            <h2 class="card-title">[ 閰嶇疆绠＄悊 ]</h2>
+            <h2 class="card-title">[ 配置管理 ]</h2>
             <div id="kvStatus" style="margin-bottom: 20px; padding: 10px; background: rgba(0, 20, 0, 0.8); border: 1px solid #00ff00; color: #00ff00;">
-                妫€娴婯V鐘舵€佷腑...
+                检查KV状态中...
             </div>
             <div id="configContent" style="display: none;">
                 <form id="regionForm" style="margin-bottom: 20px;">
                     <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 8px; color: #00ff00; font-weight: bold; text-shadow: 0 0 3px #00ff00;">鎸囧畾鍦板尯 (wk):</label>
+                        <label style="display: block; margin-bottom: 8px; color: #00ff00; font-weight: bold; text-shadow: 0 0 3px #00ff00;">指定区域 (wk):</label>
                         <select id="wkRegion" style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 14px;">
-                            <option value="">鑷姩妫€娴?/option>
-                            <option value="US">馃嚭馃嚫 缇庡浗</option>
-                            <option value="SG">馃嚫馃嚞 鏂板姞鍧?/option>
-                            <option value="JP">馃嚡馃嚨 鏃ユ湰</option>
-                            <option value="HK">馃嚟馃嚢 棣欐腐</option>
-                            <option value="KR">馃嚢馃嚪 闊╁浗</option>
-                            <option value="DE">馃嚛馃嚜 寰峰浗</option>
-                            <option value="SE">馃嚫馃嚜 鐟炲吀</option>
-                            <option value="NL">馃嚦馃嚤 鑽峰叞</option>
-                            <option value="FI">馃嚝馃嚠 鑺叞</option>
-                            <option value="GB">馃嚞馃嚙 鑻卞浗</option>
+                            <option value="">自动检测</option>
+                            <option value="US">🇺🇸 美国</option>
+                            <option value="SG">🇸🇬 新加坡</option>
+                            <option value="JP">🇯🇵 日本</option>
+                            <option value="HK">🇭🇰 香港</option>
+                            <option value="KR">🇰🇷 韩国</option>
+                            <option value="DE">🇩🇪 德国</option>
+                            <option value="SE">🇸🇪 瑞典</option>
+                            <option value="NL">🇳🇱 荷兰</option>
+                            <option value="FI">🇫🇮 芬兰</option>
+                            <option value="GB">🇬🇧 英国</option>
                         </select>
-                        <small id="wkRegionHint" style="color: #00aa00; font-size: 0.85rem; display: none;">鈿狅笍 浣跨敤鑷畾涔塒roxyIP鏃讹紝鍦板尯閫夋嫨宸茬鐢?/small>
+                        <small id="wkRegionHint" style="color: #00aa00; font-size: 0.85rem; display: none;">⚠️ 使用自定义ProxyIP时，区域选择已禁用</small>
                     </div>
-                    <button type="submit" style="background: rgba(0, 255, 0, 0.15); border: 2px solid #00ff00; padding: 12px 24px; color: #00ff00; font-family: 'Courier New', monospace; font-weight: bold; cursor: pointer; margin-right: 10px; text-shadow: 0 0 8px #00ff00; transition: all 0.4s ease;">淇濆瓨鍦板尯閰嶇疆</button>
+                    <button type="submit" style="background: rgba(0, 255, 0, 0.15); border: 2px solid #00ff00; padding: 12px 24px; color: #00ff00; font-family: 'Courier New', monospace; font-weight: bold; cursor: pointer; margin-right: 10px; text-shadow: 0 0 8px #00ff00; transition: all 0.4s ease;">保存区域配置</button>
                 </form>
                 <form id="otherConfigForm" style="margin-bottom: 20px;">
                     <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 8px; color: #00ff00; font-weight: bold; text-shadow: 0 0 3px #00ff00;">鑷畾涔塒roxyIP (p):</label>
-                        <input type="text" id="customIP" placeholder="渚嬪: 1.2.3.4:443" style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 14px;">
-                        <small style="color: #00aa00; font-size: 0.85rem;">鑷畾涔塒roxyIP鍦板潃鍜岀鍙?/small>
+                        <label style="display: block; margin-bottom: 8px; color: #00ff00; font-weight: bold; text-shadow: 0 0 3px #00ff00;">自定义ProxyIP (p):</label>
+                        <input type="text" id="customIP" placeholder="例如: 1.2.3.4:443" style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 14px;">
+                        <small style="color: #00aa00; font-size: 0.85rem;">自定义ProxyIP地址和端口</small>
                     </div>
                     <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 8px; color: #00ff00; font-weight: bold; text-shadow: 0 0 3px #00ff00;">浼橀€塈P鍒楄〃 (yx):</label>
-                        <input type="text" id="preferredIPs" placeholder="渚嬪: 1.2.3.4:443#棣欐腐鑺傜偣,5.6.7.8:80#缇庡浗鑺傜偣,example.com:8443#鏂板姞鍧¤妭鐐? style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 14px;">
-                        <small style="color: #00aa00; font-size: 0.85rem;">鏍煎紡: IP:绔彛#鑺傜偣鍚嶇О 鎴?IP:绔彛 (鏃?鍒欎娇鐢ㄩ粯璁ゅ悕绉?銆傛敮鎸佸涓紝鐢ㄩ€楀彿鍒嗛殧銆?span style="color: #ffaa00;">API娣诲姞鐨処P浼氳嚜鍔ㄦ樉绀哄湪杩欓噷銆?/span></small>
+                        <label style="display: block; margin-bottom: 8px; color: #00ff00; font-weight: bold; text-shadow: 0 0 3px #00ff00;">优选IP列表 (yx):</label>
+                        <input type="text" id="preferredIPs" placeholder="例如: 1.2.3.4:443#香港节点,5.6.7.8:80#美国节点,example.com:8443#新加坡节点" style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 14px;">
+                        <small style="color: #00aa00; font-size: 0.85rem;">格式: IP:端口#节点名称 或 IP:端口 (空则使用默认名称)。支持多个，用逗号分隔。<span style="color: #ffaa00;">API添加的IP会自动显示在这里。</span></small>
                     </div>
                     <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 8px; color: #00ff00; font-weight: bold; text-shadow: 0 0 3px #00ff00;">浼橀€塈P鏉ユ簮URL (yxURL):</label>
-                        <input type="text" id="preferredIPsURL" placeholder="榛樿: https://raw.githubusercontent.com/qwer-search/bestip/refs/heads/main/kejilandbestip.txt" style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 14px;">
-                        <small style="color: #00aa00; font-size: 0.85rem;">鑷畾涔変紭閫塈P鍒楄〃鏉ユ簮URL锛岀暀绌哄垯浣跨敤榛樿鍦板潃</small>
+                        <label style="display: block; margin-bottom: 8px; color: #00ff00; font-weight: bold; text-shadow: 0 0 3px #00ff00;">优选IP来源URL (yxURL):</label>
+                        <input type="text" id="preferredIPsURL" placeholder="默认: https://raw.githubusercontent.com/qwer-search/bestip/refs/heads/main/kejilandbestip.txt" style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 14px;">
+                        <small style="color: #00aa00; font-size: 0.85rem;">自定义优选IP列表来源URL，留空则使用默认地址</small>
                     </div>
                     <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 8px; color: #00ff00; font-weight: bold; text-shadow: 0 0 3px #00ff00;">SOCKS5閰嶇疆 (s):</label>
-                        <input type="text" id="socksConfig" placeholder="渚嬪: user:pass@host:port 鎴?host:port" style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 14px;">
-                        <small style="color: #00aa00; font-size: 0.85rem;">SOCKS5浠ｇ悊鍦板潃锛岀敤浜庤浆鍙戞墍鏈夊嚭绔欐祦閲?/small>
+                        <label style="display: block; margin-bottom: 8px; color: #00ff00; font-weight: bold; text-shadow: 0 0 3px #00ff00;">SOCKS5配置 (s):</label>
+                        <input type="text" id="socksConfig" placeholder="例如: user:pass@host:port 或 host:port" style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 14px;">
+                        <small style="color: #00aa00; font-size: 0.85rem;">SOCKS5代理地址，用于转发所有出站流量</small>
                     </div>
-                    <button type="submit" style="background: rgba(0, 255, 0, 0.15); border: 2px solid #00ff00; padding: 12px 24px; color: #00ff00; font-family: 'Courier New', monospace; font-weight: bold; cursor: pointer; margin-right: 10px; text-shadow: 0 0 8px #00ff00; transition: all 0.4s ease;">淇濆瓨閰嶇疆</button>
+                    <button type="submit" style="background: rgba(0, 255, 0, 0.15); border: 2px solid #00ff00; padding: 12px 24px; color: #00ff00; font-family: 'Courier New', monospace; font-weight: bold; cursor: pointer; margin-right: 10px; text-shadow: 0 0 8px #00ff00; transition: all 0.4s ease;">保存配置</button>
                 </form>
                 
-                <h3 style="color: #00ff00; margin: 20px 0 15px 0; font-size: 1.2rem;">楂樼骇鎺у埗</h3>
+                <h3 style="color: #00ff00; margin: 20px 0 15px 0; font-size: 1.2rem;">高级控制</h3>
                 <form id="advancedConfigForm" style="margin-bottom: 20px;">
                     <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 8px; color: #00ff00; font-weight: bold; text-shadow: 0 0 3px #00ff00;">鍏佽API绠＄悊 (apiEnabled):</label>
+                        <label style="display: block; margin-bottom: 8px; color: #00ff00; font-weight: bold; text-shadow: 0 0 3px #00ff00;">允许API管理 (apiEnabled):</label>
                         <select id="apiEnabled" style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 14px;">
-                            <option value="">榛樿锛堝叧闂瑼PI锛?/option>
-                            <option value="yes">寮€鍚疉PI绠＄悊</option>
+                            <option value="">默认（关闭API）</option>
+                            <option value="yes">开启API管理</option>
                         </select>
-                        <small style="color: #ffaa00; font-size: 0.85rem;">鈿狅笍 瀹夊叏鎻愰啋锛氬紑鍚悗鍏佽閫氳繃API鍔ㄦ€佹坊鍔犱紭閫塈P銆傚缓璁粎鍦ㄩ渶瑕佹椂寮€鍚€?/small>
+                        <small style="color: #ffaa00; font-size: 0.85rem;">⚠️ 安全提醒：开启后允许通过API动态添加优选IP。建议仅在需要时开启。</small>
                     </div>
                     <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 8px; color: #00ff00; font-weight: bold; text-shadow: 0 0 3px #00ff00;">鍦板尯鍖归厤 (rm):</label>
+                        <label style="display: block; margin-bottom: 8px; color: #00ff00; font-weight: bold; text-shadow: 0 0 3px #00ff00;">区域匹配 (rm):</label>
                         <select id="regionMatching" style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 14px;">
-                            <option value="">榛樿锛堝惎鐢ㄥ湴鍖哄尮閰嶏級</option>
-                            <option value="no">鍏抽棴鍦板尯鍖归厤</option>
+                            <option value="">默认（启用地区匹配）</option>
+                            <option value="no">关闭地区匹配</option>
                         </select>
-                        <small style="color: #00aa00; font-size: 0.85rem;">璁剧疆涓?鍏抽棴"鏃朵笉杩涜鍦板尯鏅鸿兘鍖归厤</small>
+                        <small style="color: #00aa00; font-size: 0.85rem;">设置为"关闭"时不进行地区智能匹配</small>
                     </div>
                     <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 8px; color: #00ff00; font-weight: bold; text-shadow: 0 0 3px #00ff00;">闄嶇骇鎺у埗 (qj):</label>
+                        <label style="display: block; margin-bottom: 8px; color: #00ff00; font-weight: bold; text-shadow: 0 0 3px #00ff00;">降级控制 (qj):</label>
                         <select id="downgradeControl" style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 14px;">
-                            <option value="">榛樿锛堜笉鍚敤闄嶇骇锛?/option>
-                            <option value="no">鍚敤闄嶇骇妯″紡</option>
+                            <option value="">默认（不启用降级）</option>
+                            <option value="no">启用降级模式</option>
                         </select>
-                        <small style="color: #00aa00; font-size: 0.85rem;">璁剧疆涓?鍚敤"鏃讹細CF鐩磋繛澶辫触鈫扴OCKS5杩炴帴鈫抐allback鍦板潃</small>
+                        <small style="color: #00aa00; font-size: 0.85rem;">设置为"启用"时：CF直连失败→SOCKS5连接→Fallback地址</small>
                     </div>
                     <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 8px; color: #00ff00; font-weight: bold; text-shadow: 0 0 3px #00ff00;">TLS鎺у埗 (dkby):</label>
+                        <label style="display: block; margin-bottom: 8px; color: #00ff00; font-weight: bold; text-shadow: 0 0 3px #00ff00;">TLS控制 (dkby):</label>
                         <select id="portControl" style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 14px;">
-                            <option value="">榛樿锛堜繚鐣欐墍鏈夎妭鐐癸級</option>
-                            <option value="yes">浠匱LS鑺傜偣</option>
+                            <option value="">默认（保留所有节点）</option>
+                            <option value="yes">仅TLS节点</option>
                         </select>
-                        <small style="color: #00aa00; font-size: 0.85rem;">璁剧疆涓?浠匱LS鑺傜偣"鏃跺彧鐢熸垚甯LS鐨勮妭鐐癸紝涓嶇敓鎴愰潪TLS鑺傜偣锛堝80绔彛锛?/small>
+                        <small style="color: #00aa00; font-size: 0.85rem;">设置为"仅TLS节点"时只生成带TLS的节点，不生成非TLS节点（如80端口）</small>
                     </div>
                     <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 8px; color: #00ff00; font-weight: bold; text-shadow: 0 0 3px #00ff00;">浼橀€夋帶鍒?(yxby):</label>
+                        <label style="display: block; margin-bottom: 8px; color: #00ff00; font-weight: bold; text-shadow: 0 0 3px #00ff00;">优选控制 (yxby):</label>
                         <select id="preferredControl" style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 14px;">
-                            <option value="">榛樿锛堝惎鐢ㄤ紭閫夛級</option>
-                            <option value="yes">鍏抽棴浼橀€?/option>
+                            <option value="">默认（启用优选）</option>
+                            <option value="yes">关闭优选</option>
                         </select>
-                        <small style="color: #00aa00; font-size: 0.85rem;">璁剧疆涓?鍏抽棴浼橀€?鏃跺彧浣跨敤鍘熺敓鍦板潃锛屼笉鐢熸垚浼橀€塈P鍜屽煙鍚嶈妭鐐?/small>
+                        <small style="color: #00aa00; font-size: 0.85rem;">设置为"关闭优选"时只使用原生地址，不生成优选IP和域名节点</small>
                     </div>
-                    <button type="submit" style="background: rgba(0, 255, 0, 0.15); border: 2px solid #00ff00; padding: 12px 24px; color: #00ff00; font-family: 'Courier New', monospace; font-weight: bold; cursor: pointer; margin-right: 10px; text-shadow: 0 0 8px #00ff00; transition: all 0.4s ease;">淇濆瓨楂樼骇閰嶇疆</button>
+                    <button type="submit" style="background: rgba(0, 255, 0, 0.15); border: 2px solid #00ff00; padding: 12px 24px; color: #00ff00; font-family: 'Courier New', monospace; font-weight: bold; cursor: pointer; margin-right: 10px; text-shadow: 0 0 8px #00ff00; transition: all 0.4s ease;">保存高级配置</button>
                 </form>
                 <div id="currentConfig" style="background: rgba(0, 0, 0, 0.9); border: 1px solid #00ff00; padding: 15px; margin: 10px 0; font-family: 'Courier New', monospace; color: #00ff00;">
-                    鍔犺浇涓?..
+                    加载中..
                 </div>
-                <button onclick="loadCurrentConfig()" style="background: rgba(0, 255, 0, 0.15); border: 2px solid #00ff00; padding: 12px 24px; color: #00ff00; font-family: 'Courier New', monospace; font-weight: bold; cursor: pointer; margin-right: 10px; text-shadow: 0 0 8px #00ff00; transition: all 0.4s ease;">鍒锋柊閰嶇疆</button>
-                <button onclick="resetAllConfig()" style="background: rgba(255, 0, 0, 0.15); border: 2px solid #ff0000; padding: 12px 24px; color: #ff0000; font-family: 'Courier New', monospace; font-weight: bold; cursor: pointer; text-shadow: 0 0 8px #ff0000; transition: all 0.4s ease;">閲嶇疆閰嶇疆</button>
+                <button onclick="loadCurrentConfig()" style="background: rgba(0, 255, 0, 0.15); border: 2px solid #00ff00; padding: 12px 24px; color: #00ff00; font-family: 'Courier New', monospace; font-weight: bold; cursor: pointer; margin-right: 10px; text-shadow: 0 0 8px #00ff00; transition: all 0.4s ease;">刷新配置</button>
+                <button type="button" id="resetConfigBtn" style="background: rgba(255, 0, 0, 0.15); border: 2px solid #ff4444; padding: 12px 24px; color: #ff4444; font-family: 'Courier New', monospace; font-weight: bold; cursor: pointer; text-shadow: 0 0 8px #ff4444; transition: all 0.4s ease;">重置配置</button>
             </div>
             <div id="statusMessage" style="display: none; padding: 10px; margin: 10px 0; border: 1px solid #00ff00; background: rgba(0, 20, 0, 0.8); color: #00ff00; text-shadow: 0 0 5px #00ff00;"></div>
         </div>
         
         <div class="card">
-            <h2 class="card-title">[ 鐩稿叧閾炬帴 ]</h2>
+            <h2 class="card-title">[ 相关链接 ]</h2>
             <div style="text-align: center; margin: 20px 0;">
-                <a href="https://github.com/byJoey/cfnew" target="_blank" style="color: #00ff00; text-decoration: none; margin: 0 20px; font-size: 1.2rem; text-shadow: 0 0 5px #00ff00;">GitHub 椤圭洰</a>
+                <a href="https://github.com/byJoey/cfnew" target="_blank" style="color: #00ff00; text-decoration: none; margin: 0 20px; font-size: 1.2rem; text-shadow: 0 0 5px #00ff00;">GitHub 项目</a>
                 <a href="https://www.youtube.com/@joeyblog" target="_blank" style="color: #00ff00; text-decoration: none; margin: 0 20px; font-size: 1.2rem; text-shadow: 0 0 5px #00ff00;">YouTube @joeyblog</a>
             </div>
         </div>
@@ -1711,7 +1719,7 @@ async function handleSubscriptionPage(request, user = null) {
                 document.getElementById("clientSubscriptionUrl").textContent = subscriptionUrl;
                 document.getElementById("clientSubscriptionUrl").style.display = "block";
                 navigator.clipboard.writeText(subscriptionUrl).then(function() {
-                    alert("V2Ray 璁㈤槄閾炬帴宸插鍒?);
+                    alert("V2Ray 订阅链接已复制");
                 });
             } else {
                 var encodedUrl = encodeURIComponent(subscriptionUrl);
@@ -1722,7 +1730,7 @@ async function handleSubscriptionPage(request, user = null) {
                     var displayName = clientType.toUpperCase();
                     if (clientType === atob('c3VyZ2U=')) displayName = 'SURGE';
                     if (clientType === atob('c2luZ2JveA==')) displayName = 'SING-BOX';
-                    alert(displayName + " 璁㈤槄閾炬帴宸插鍒?);
+                    alert(displayName + " 订阅链接已复制");
                 });
             }
         }
@@ -1738,12 +1746,12 @@ async function handleSubscriptionPage(request, user = null) {
                     document.getElementById("base64SubscriptionUrl").textContent = base64Content;
                     document.getElementById("base64SubscriptionUrl").style.display = "block";
                     navigator.clipboard.writeText(base64Content).then(function() {
-                        alert("Base64璁㈤槄鍐呭宸插鍒?);
+                        alert("Base64订阅内容已复制");
                     });
                 })
                 .catch(function(error) {
-                    console.error("鑾峰彇璁㈤槄澶辫触:", error);
-                    alert("鑾峰彇璁㈤槄澶辫触锛岃閲嶈瘯");
+                    console.error("获取订阅失败:", error);
+                    alert("获取订阅失败，请重试");
                 });
         }
         
@@ -1804,7 +1812,8 @@ async function handleSubscriptionPage(request, user = null) {
                       'FI': '🇫🇮 芬兰', 'GB': '🇬🇧 英国'
                 };
                 
-                let detectedRegion = 'US'; // 榛樿鍊?                let isCustomIPMode = false;
+                let detectedRegion = 'US'; // 默认值
+                let isCustomIPMode = false;
                 let isManualRegionMode = false;
                 try {
                     const response = await fetch('/region');
@@ -1815,61 +1824,64 @@ async function handleSubscriptionPage(request, user = null) {
                         isCustomIPMode = true;
                         detectedRegion = 'CUSTOM';
                         
-                        // 鑾峰彇鑷畾涔塈P鐨勮缁嗕俊鎭?                        const customIPInfo = data.customIP || '鏈煡';
+                        // 获取自定义IP的详细信息
+                        const customIPInfo = data.customIP || '未知';
                         
-                        geoInfo.innerHTML = '妫€娴嬫柟寮? <span style="color: #ffaa00;">鈿欙笍 鑷畾涔塒roxyIP妯″紡 (p鍙橀噺鍚敤)</span>';
-                        regionStatus.innerHTML = 'Worker鍦板尯: <span style="color: #ffaa00;">馃敡 鑷畾涔塈P妯″紡 (宸茬鐢ㄥ湴鍖哄尮閰?</span>';
+                        geoInfo.innerHTML = '检测方式: <span style="color: #ffaa00;">⚙️ 自定义ProxyIP模式 (p变量启用)</span>';
+                        regionStatus.innerHTML = 'Worker地区: <span style="color: #ffaa00;">🔧 自定义ProxyIP模式 (已用地域匹配)</span>';
                         
-                        // 鏄剧ず鑷畾涔塈P閰嶇疆鐘舵€侊紝鍖呭惈鍏蜂綋IP
-                        if (backupStatus) backupStatus.innerHTML = 'ProxyIP鐘舵€? <span style="color: #ffaa00;">馃敡 浣跨敤鑷畾涔塒roxyIP: ' + customIPInfo + '</span>';
-                        if (currentIP) currentIP.innerHTML = '褰撳墠浣跨敤IP: <span style="color: #ffaa00;">鉁?' + customIPInfo + ' (p鍙橀噺閰嶇疆)</span>';
-                        if (regionMatch) regionMatch.innerHTML = '鍦板尯鍖归厤: <span style="color: #ffaa00;">鈿狅笍 鑷畾涔塈P妯″紡锛屽湴鍖洪€夋嫨宸茬鐢?/span>';
+                        // 显示自定义ProxyIP配置状态，包括具体IP
+                        if (backupStatus) backupStatus.innerHTML = 'ProxyIP状态: <span style="color: #ffaa00;">🔧 使用自定义ProxyIP: ' + customIPInfo + '</span>';
+                        if (currentIP) currentIP.innerHTML = '当前使用IP: <span style="color: #ffaa00;">✅ ' + customIPInfo + ' (p变量配置)</span>';
+                        if (regionMatch) regionMatch.innerHTML = '地区匹配: <span style="color: #ffaa00;">⚙️ 自定义ProxyIP模式，地区选择已禁用</span>';
                         
-                        return; // 鎻愬墠杩斿洖锛屼笉鎵ц鍚庣画鐨勫湴鍖哄尮閰嶉€昏緫
-                    } else if (data.detectionMethod === '鎵嬪姩鎸囧畾鍦板尯') {
+                        return; // 提前返回，不执行后续的地区匹配逻辑
+                    } else if (data.detectionMethod === '手动指定地区') {
                         isManualRegionMode = true;
                         detectedRegion = data.region;
                         
-                        geoInfo.innerHTML = '妫€娴嬫柟寮? <span style="color: #44aa44;">鎵嬪姩鎸囧畾鍦板尯</span>';
-                        regionStatus.innerHTML = 'Worker鍦板尯: <span style="color: #44ff44;">馃幆 ' + regionNames[detectedRegion] + ' (鎵嬪姩鎸囧畾)</span>';
+                        geoInfo.innerHTML = '检测方式: <span style="color: #44aa44;">手动指定地区</span>';
+                        regionStatus.innerHTML = 'Worker地区: <span style="color: #44ff44;">🌍 ' + regionNames[detectedRegion] + ' (手动指定)</span>';
                         
-                        // 鏄剧ず閰嶇疆鐘舵€佽€屼笉鏄娴嬬姸鎬?                        if (backupStatus) backupStatus.innerHTML = 'ProxyIP鐘舵€? <span style="color: #44ff44;">鉁?10/10 鍙敤 (ProxyIP鍩熷悕棰勮鍙敤)</span>';
-                        if (currentIP) currentIP.innerHTML = '褰撳墠浣跨敤IP: <span style="color: #44ff44;">鉁?鏅鸿兘灏辫繎閫夋嫨涓?/span>';
-                        if (regionMatch) regionMatch.innerHTML = '鍦板尯鍖归厤: <span style="color: #44ff44;">鉁?鍚屽湴鍖篒P鍙敤 (1涓?</span>';
+                        // 显示配置状态而不是检测状态
+                        if (backupStatus) backupStatus.innerHTML = 'ProxyIP状态: <span style="color: #44ff44;">✅ 10/10 可用 (ProxyIP域名预设可用)</span>';
+                        if (currentIP) currentIP.innerHTML = '当前使用IP: <span style="color: #44ff44;">✅ 智能就近选择中</span>';
+                        if (regionMatch) regionMatch.innerHTML = '地区匹配: <span style="color: #44ff44;">✅ 同地区IP可用 (1个)</span>';
                         
-                        return; // 鎻愬墠杩斿洖锛屼笉鎵ц鍚庣画鐨勫湴鍖哄尮閰嶉€昏緫
+                        return; // 提前返回，不执行后续的地区匹配逻辑
                     } else if (data.region && regionNames[data.region]) {
                         detectedRegion = data.region;
                     }
                     
-                    geoInfo.innerHTML = '妫€娴嬫柟寮? <span style="color: #44ff44;">Cloudflare鍐呯疆妫€娴?/span>';
+                    geoInfo.innerHTML = '检测方式: <span style="color: #44ff44;">Cloudflare内置检测</span>';
                     
                 } catch (e) {
-                    geoInfo.innerHTML = '妫€娴嬫柟寮? <span style="color: #ff4444;">妫€娴嬪け璐?/span>';
+                    geoInfo.innerHTML = '检测方式: <span style="color: #ff4444;">检测失败</span>';
                 }
                 
-                regionStatus.innerHTML = 'Worker鍦板尯: <span style="color: #44ff44;">鉁?' + regionNames[detectedRegion] + '</span>';
+                regionStatus.innerHTML = 'Worker地区: <span style="color: #44ff44;">🌍 ' + regionNames[detectedRegion] + '</span>';
                 
                 
-                // 鐩存帴鏄剧ず閰嶇疆鐘舵€侊紝涓嶅啀杩涜妫€娴?                if (backupStatus) {
-                    backupStatus.innerHTML = 'ProxyIP鐘舵€? <span style="color: #44ff44;">鉁?10/10 鍙敤 (ProxyIP鍩熷悕棰勮鍙敤)</span>';
+                // 直接显示配置状态，不再进行检查
+                if (backupStatus) {
+                    backupStatus.innerHTML = 'ProxyIP状态: <span style="color: #44ff44;">✅ 10/10 可用 (ProxyIP域名预设可用)</span>';
                 }
                 
                 if (currentIP) {
-                    currentIP.innerHTML = '褰撳墠浣跨敤IP: <span style="color: #44ff44;">鉁?鏅鸿兘灏辫繎閫夋嫨涓?/span>';
+                    currentIP.innerHTML = '当前使用IP: <span style="color: #44ff44;">✅ 智能就近选择中</span>';
                 }
                 
                 if (regionMatch) {
-                    regionMatch.innerHTML = '鍦板尯鍖归厤: <span style="color: #44ff44;">鉁?鍚屽湴鍖篒P鍙敤 (1涓?</span>';
+                    regionMatch.innerHTML = '地区匹配: <span style="color: #44ff44;">✅ 同地区IP可用 (1个)</span>';
                 }
                 
             } catch (error) {
-                console.error('鐘舵€佹娴嬪け璐?', error);
-                document.getElementById('regionStatus').innerHTML = 'Worker鍦板尯: <span style="color: #ff4444;">鉂?妫€娴嬪け璐?/span>';
-                document.getElementById('geoInfo').innerHTML = '鍦扮悊浣嶇疆: <span style="color: #ff4444;">鉂?妫€娴嬪け璐?/span>';
-                document.getElementById('backupStatus').innerHTML = 'ProxyIP鐘舵€? <span style="color: #ff4444;">鉂?妫€娴嬪け璐?/span>';
-                document.getElementById('currentIP').innerHTML = '褰撳墠浣跨敤IP: <span style="color: #ff4444;">鉂?妫€娴嬪け璐?/span>';
-                document.getElementById('regionMatch').innerHTML = '鍦板尯鍖归厤: <span style="color: #ff4444;">鉂?妫€娴嬪け璐?/span>';
+                console.error('状态检测失败', error);
+                document.getElementById('regionStatus').innerHTML = 'Worker地区: <span style="color: #ff4444;">❌ 检测失败</span>';
+                document.getElementById('geoInfo').innerHTML = '地理位置: <span style="color: #ff4444;">❌ 检测失败</span>';
+                document.getElementById('backupStatus').innerHTML = 'ProxyIP状态: <span style="color: #ff4444;">❌ 检测失败</span>';
+                document.getElementById('currentIP').innerHTML = '当前使用IP: <span style="color: #ff4444;">❌ 检测失败</span>';
+                document.getElementById('regionMatch').innerHTML = '地区匹配: <span style="color: #ff4444;">❌ 检测失败</span>';
             }
         }
         
@@ -1880,87 +1892,88 @@ async function handleSubscriptionPage(request, user = null) {
                 
                 
                 if (data.detectedRegion) {
-                    alert('API妫€娴嬬粨鏋? ' + data.detectedRegion + '\\n妫€娴嬫椂闂? ' + data.timestamp);
+                    alert('API检测结果: ' + data.detectedRegion + '\n检测时间: ' + data.timestamp);
                 } else {
-                    alert('API妫€娴嬪け璐? ' + (data.error || '鏈煡閿欒'));
+                    alert('API检测失败: ' + (data.error || '未知错误'));
                 }
             } catch (error) {
-                console.error('API娴嬭瘯澶辫触:', error);
-                alert('API娴嬭瘯澶辫触: ' + error.message);
+                console.error('API测试失败:', error);
+                alert('API测试失败: ' + error.message);
             }
         }
         
-        // 閰嶇疆绠＄悊鐩稿叧鍑芥暟
+        // 配置管理相关函数
         async function checkKVStatus() {
             const apiUrl = window.location.pathname + '/api/config';
-            console.log('馃攳 璋冭瘯淇℃伅 - 妫€鏌V鐘舵€?);
-            console.log('璇锋眰URL:', apiUrl);
+            console.log('🔍 调试信息 - 检查KV状态');
+            console.log('请求URL:', apiUrl);
             
             try {
                 const response = await fetch(apiUrl);
-                console.log('鍝嶅簲鐘舵€?', response.status);
-                console.log('鍝嶅簲澶?', Object.fromEntries(response.headers.entries()));
+                console.log('响应状态:', response.status);
+                console.log('响应头:', Object.fromEntries(response.headers.entries()));
                 
                 if (response.status === 503) {
-                    // KV鏈厤缃?                    console.log('鉂?KV瀛樺偍鏈厤缃?(503)');
-                    document.getElementById('kvStatus').innerHTML = '<span style="color: #ffaa00;">鈿狅笍 KV瀛樺偍鏈惎鐢ㄦ垨鏈厤缃?/span>';
+                    // KV未配置
+                    console.log('⚠️ KV存储未配置(503)');
+                    document.getElementById('kvStatus').innerHTML = '<span style="color: #ffaa00;">⚙️ KV存储未启用或未配置</span>';
                     document.getElementById('configCard').style.display = 'block';
-                    document.getElementById('currentConfig').textContent = 'KV瀛樺偍鏈厤缃紝鏃犳硶浣跨敤閰嶇疆绠＄悊鍔熻兘銆俓\n\\n璇峰湪Cloudflare Workers涓?\\n1. 鍒涘缓KV鍛藉悕绌洪棿\\n2. 缁戝畾鐜鍙橀噺 C\\n3. 閲嶆柊閮ㄧ讲浠ｇ爜';
+                    document.getElementById('currentConfig').textContent = 'KV存储未配置，无法使用配置管理功能。\n\n请在Cloudflare Workers中\n1. 创建KV命名空间\n2. 绑定环境变量 C\n3. 重新部署代码';
                 } else if (response.ok) {
                     const data = await response.json();
-                    console.log('鍝嶅簲鏁版嵁:', data);
+                    console.log('响应数据:', data);
                     console.log('kvEnabled:', data.kvEnabled);
                     
-                    // 妫€鏌ュ搷搴旀槸鍚﹀寘鍚獽V閰嶇疆淇℃伅
+                    // 检查响应是否包含KV配置信息
                     if (data && data.kvEnabled === true) {
-                        console.log('鉁?KV瀛樺偍宸插惎鐢?);
-                        document.getElementById('kvStatus').innerHTML = '<span style="color: #44ff44;">鉁?KV瀛樺偍宸插惎鐢紝鍙互浣跨敤閰嶇疆绠＄悊鍔熻兘</span>';
+                        console.log('✅ KV存储已启用');
+                        document.getElementById('kvStatus').innerHTML = '<span style="color: #44ff44;">✅ KV存储已启用，可以使用配置管理功能</span>';
                         document.getElementById('configContent').style.display = 'block';
                         document.getElementById('configCard').style.display = 'block';
                         await loadCurrentConfig();
                     } else {
-                        console.log('鉂?KV瀛樺偍鏈惎鐢?(鍝嶅簲涓璳vEnabled涓嶄负true)');
-                        document.getElementById('kvStatus').innerHTML = '<span style="color: #ffaa00;">鈿狅笍 KV瀛樺偍鏈惎鐢ㄦ垨鏈厤缃?/span>';
+                        console.log('⚠️ KV存储未启用(响应中kvEnabled不为true)');
+                        document.getElementById('kvStatus').innerHTML = '<span style="color: #ffaa00;">⚙️ KV存储未启用或未配置</span>';
                         document.getElementById('configCard').style.display = 'block';
-                        document.getElementById('currentConfig').textContent = 'KV瀛樺偍鏈厤缃?;
+                        document.getElementById('currentConfig').textContent = 'KV存储未配置';
                     }
                 } else {
-                    console.log('鉂?鍝嶅簲閿欒:', response.status, response.statusText);
-                    document.getElementById('kvStatus').innerHTML = '<span style="color: #ffaa00;">鈿狅笍 KV瀛樺偍鏈惎鐢ㄦ垨鏈厤缃?/span>';
+                    console.log('❌ 响应错误:', response.status, response.statusText);
+                    document.getElementById('kvStatus').innerHTML = '<span style="color: #ffaa00;">⚙️ KV存储未启用或未配置</span>';
                     document.getElementById('configCard').style.display = 'block';
-                    document.getElementById('currentConfig').textContent = 'KV瀛樺偍妫€娴嬪け璐?- 鐘舵€佺爜: ' + response.status;
+                    document.getElementById('currentConfig').textContent = 'KV存储检测失败 - 状态码: ' + response.status;
                 }
             } catch (error) {
-                console.log('鉂?璇锋眰澶辫触:', error);
-                document.getElementById('kvStatus').innerHTML = '<span style="color: #ffaa00;">鈿狅笍 KV瀛樺偍鏈惎鐢ㄦ垨鏈厤缃?/span>';
+                console.log('❌ 请求失败:', error);
+                document.getElementById('kvStatus').innerHTML = '<span style="color: #ffaa00;">⚙️ KV存储未启用或未配置</span>';
                 document.getElementById('configCard').style.display = 'block';
-                document.getElementById('currentConfig').textContent = 'KV瀛樺偍妫€娴嬪け璐?- 閿欒: ' + error.message;
+                document.getElementById('currentConfig').textContent = 'KV存储检测失败 - 错误: ' + error.message;
             }
         }
         
         async function loadCurrentConfig() {
             const apiUrl = window.location.pathname + '/api/config';
-            console.log('馃摜 璋冭瘯淇℃伅 - 鍔犺浇閰嶇疆');
-            console.log('璇锋眰URL:', apiUrl);
+            console.log('📝 调试信息 - 加载配置');
+            console.log('请求URL:', apiUrl);
             
             try {
                 const response = await fetch(apiUrl);
-                console.log('鍔犺浇鍝嶅簲鐘舵€?', response.status);
+                console.log('加载响应状态:', response.status);
                 
                 if (response.status === 503) {
-                    console.log('鉂?KV瀛樺偍鏈厤缃紝鏃犳硶鍔犺浇閰嶇疆');
-                    document.getElementById('currentConfig').textContent = 'KV瀛樺偍鏈厤缃紝鏃犳硶鍔犺浇閰嶇疆';
+                    console.log('⚠️ KV存储未配置，无法加载配置');
+                    document.getElementById('currentConfig').textContent = 'KV存储未配置，无法加载配置';
                     return;
                 }
                 if (!response.ok) {
-                    console.log('鉂?鍔犺浇閰嶇疆澶辫触锛岀姸鎬佺爜:', response.status);
-                    document.getElementById('currentConfig').textContent = '鍔犺浇閰嶇疆澶辫触';
+                    console.log('❌ 加载配置失败，状态码:', response.status);
+                    document.getElementById('currentConfig').textContent = '加载配置失败';
                     return;
                 }
                 const config = await response.json();
-                console.log('鍔犺浇鐨勯厤缃暟鎹?', config);
+                console.log('加载的配置数据:', config);
                 
-                // 杩囨护鎺夊唴閮ㄥ瓧娈?kvEnabled
+                // 过滤掉内部字段kvEnabled
                 const displayConfig = {};
                 for (const [key, value] of Object.entries(config)) {
                     if (key !== 'kvEnabled') {
@@ -1968,18 +1981,18 @@ async function handleSubscriptionPage(request, user = null) {
                     }
                 }
                 
-                let configText = '褰撳墠閰嶇疆:\\n';
+                let configText = '当前配置:\\n';
                 if (Object.keys(displayConfig).length === 0) {
-                    configText += '(鏆傛棤閰嶇疆)';
+                    configText += '(暂无配置)';
                 } else {
                     for (const [key, value] of Object.entries(displayConfig)) {
-                        configText += key + ': ' + (value || '(鏈缃?') + '\\n';
+                        configText += key + ': ' + (value || '(未设置)') + '\\n';
                     }
                 }
                 
                 document.getElementById('currentConfig').textContent = configText;
                 
-                // 鏇存柊琛ㄥ崟鍊?                document.getElementById('wkRegion').value = config.wk || '';
+                // 更新表单值                document.getElementById('wkRegion').value = config.wk || '';
                 document.getElementById('customIP').value = config.p || '';
                 document.getElementById('preferredIPs').value = config.yx || '';
                 document.getElementById('preferredIPsURL').value = config.yxURL || '';
@@ -1990,15 +2003,15 @@ async function handleSubscriptionPage(request, user = null) {
                 document.getElementById('portControl').value = config.dkby || '';
                 document.getElementById('preferredControl').value = config.yxby || '';
                 
-                // 妫€鏌鍙橀噺锛屽鏋滄湁鍊煎垯绂佺敤wk鍦板尯閫夋嫨
+                // 检查p变量，如果有值则禁用wk地区选择
                 updateWkRegionState();
                 
             } catch (error) {
-                document.getElementById('currentConfig').textContent = '鍔犺浇閰嶇疆澶辫触: ' + error.message;
+                document.getElementById('currentConfig').textContent = '加载配置失败: ' + error.message;
             }
         }
         
-        // 鏇存柊wk鍦板尯閫夋嫨鐨勫惎鐢?绂佺敤鐘舵€?        function updateWkRegionState() {
+        // 更新wk地区选择的启用/禁用状态        function updateWkRegionState() {
             const customIP = document.getElementById('customIP');
             const wkRegion = document.getElementById('wkRegion');
             const wkRegionHint = document.getElementById('wkRegionHint');
@@ -2007,12 +2020,12 @@ async function handleSubscriptionPage(request, user = null) {
                 const hasCustomIP = customIP.value.trim() !== '';
                 wkRegion.disabled = hasCustomIP;
                 
-                // 娣诲姞瑙嗚鍙嶉
+                // 添加视觉反馈
                 if (hasCustomIP) {
                     wkRegion.style.opacity = '0.5';
                     wkRegion.style.cursor = 'not-allowed';
                     wkRegion.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-                    // 鏄剧ず鎻愮ず淇℃伅
+                    // 显示提示信息
                     if (wkRegionHint) {
                         wkRegionHint.style.display = 'block';
                         wkRegionHint.style.color = '#ffaa00';
@@ -2021,7 +2034,7 @@ async function handleSubscriptionPage(request, user = null) {
                     wkRegion.style.opacity = '1';
                     wkRegion.style.cursor = 'pointer';
                     wkRegion.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-                    // 闅愯棌鎻愮ず淇℃伅
+                    // 隐藏提示信息
                     if (wkRegionHint) {
                         wkRegionHint.style.display = 'none';
                     }
@@ -2031,9 +2044,9 @@ async function handleSubscriptionPage(request, user = null) {
         
         async function saveConfig(configData) {
             const apiUrl = window.location.pathname + '/api/config';
-            console.log('馃捑 璋冭瘯淇℃伅 - 淇濆瓨閰嶇疆');
-            console.log('璇锋眰URL:', apiUrl);
-            console.log('閰嶇疆鏁版嵁:', configData);
+            console.log('💾 调试信息 - 保存配置');
+            console.log('请求URL:', apiUrl);
+            console.log('配置数据:', configData);
             
             try {
                 const response = await fetch(apiUrl, {
@@ -2042,33 +2055,35 @@ async function handleSubscriptionPage(request, user = null) {
                     body: JSON.stringify(configData)
                 });
                 
-                console.log('淇濆瓨鍝嶅簲鐘舵€?', response.status);
-                console.log('淇濆瓨鍝嶅簲澶?', Object.fromEntries(response.headers.entries()));
+                console.log('保存响应状态:', response.status);
+                console.log('保存响应头:', Object.fromEntries(response.headers.entries()));
                 
                 if (response.status === 503) {
-                    console.log('鉂?KV瀛樺偍鏈厤缃紝鏃犳硶淇濆瓨');
-                    showStatus('KV瀛樺偍鏈厤缃紝鏃犳硶淇濆瓨閰嶇疆銆傝鍏堝湪Cloudflare Workers涓厤缃甂V瀛樺偍銆?, 'error');
+                    console.log('⚠️ KV存储未配置，无法保存');
+                    showStatus('KV存储未配置，无法保存配置。请先在Cloudflare Workers中配置KV存储。', 'error');
                     return;
                 }
                 
                 const result = await response.json();
-                console.log('淇濆瓨鍝嶅簲鏁版嵁:', result);
+                console.log('保存响应数据:', result);
                 
                 showStatus(result.message, result.success ? 'success' : 'error');
                 
                 if (result.success) {
-                    console.log('鉁?淇濆瓨鎴愬姛锛岄噸鏂板姞杞介厤缃?);
+                    console.log('✅ 保存成功，重新加载配置');
                     await loadCurrentConfig();
-                    // 鏇存柊wk鍦板尯閫夋嫨鐘舵€?                    updateWkRegionState();
-                    // 淇濆瓨鎴愬姛鍚庡埛鏂伴〉闈互鏇存柊绯荤粺鐘舵€?                    setTimeout(function() {
+                    // 更新wk地区选择状态
+                    updateWkRegionState();
+                    // 保存成功后刷新页面以更新系统状态
+                    setTimeout(function() {
                         window.location.reload();
                     }, 1500);
                 } else {
-                    console.log('鉂?淇濆瓨澶辫触:', result.message);
+                    console.log('❌ 保存失败:', result.message);
                 }
             } catch (error) {
-                console.log('鉂?淇濆瓨璇锋眰澶辫触:', error);
-                showStatus('淇濆瓨澶辫触: ' + error.message, 'error');
+                console.log('❌ 保存请求失败:', error);
+                showStatus('保存失败: ' + error.message, 'error');
             }
         }
         
@@ -2085,7 +2100,7 @@ async function handleSubscriptionPage(request, user = null) {
         }
         
         async function resetAllConfig() {
-            if (confirm('纭畾瑕侀噸缃墍鏈夐厤缃悧锛熻繖灏嗘竻绌烘墍鏈塊V閰嶇疆锛屾仮澶嶄负鐜鍙橀噺璁剧疆銆?)) {
+            if (confirm('确定要重置所有配置吗？这将清空所有KV配置，恢复为环境变量设置。')) {
                 try {
                     const response = await fetch(window.location.pathname + '/api/config', {
                         method: 'POST',
@@ -2105,22 +2120,22 @@ async function handleSubscriptionPage(request, user = null) {
                     });
                     
                     if (response.status === 503) {
-                        showStatus('KV瀛樺偍鏈厤缃紝鏃犳硶閲嶇疆閰嶇疆銆?, 'error');
+                        showStatus('KV存储未配置，无法重置配置。', 'error');
                         return;
                     }
                     
                     const result = await response.json();
-                    showStatus(result.message || '閰嶇疆宸查噸缃?, result.success ? 'success' : 'error');
+                    showStatus(result.message || '配置已重置', result.success ? 'success' : 'error');
                     
                     if (result.success) {
                         await loadCurrentConfig();
-                        // 鏇存柊wk鍦板尯閫夋嫨鐘舵€?                        updateWkRegionState();
-                        // 鍒锋柊椤甸潰浠ユ洿鏂扮郴缁熺姸鎬?                        setTimeout(function() {
+                        // 更新wk地区选择状态                        updateWkRegionState();
+                        // 刷新页面以更新系统状态                        setTimeout(function() {
                             window.location.reload();
                         }, 1500);
                     }
                 } catch (error) {
-                    showStatus('閲嶇疆澶辫触: ' + error.message, 'error');
+                    showStatus('重置失败: ' + error.message, 'error');
                 }
             }
         }
@@ -2130,14 +2145,15 @@ async function handleSubscriptionPage(request, user = null) {
             checkSystemStatus();
             checkKVStatus();
             
-            // 鐩戝惉customIP杈撳叆妗嗗彉鍖栵紝瀹炴椂鏇存柊wk鍦板尯閫夋嫨鐘舵€?            const customIPInput = document.getElementById('customIP');
+            // 监听customIP输入框变化，实时更新wk地区选择状态
+            const customIPInput = document.getElementById('customIP');
             if (customIPInput) {
                 customIPInput.addEventListener('input', function() {
                     updateWkRegionState();
                 });
             }
             
-            // 缁戝畾琛ㄥ崟浜嬩欢
+            // 绑定表单事件
             const regionForm = document.getElementById('regionForm');
             if (regionForm) {
                 regionForm.addEventListener('submit', async function(e) {
@@ -2202,7 +2218,7 @@ function formatIdentifier(arr, offset = 0) {
 }
 
 async function fetchAndParseNewIPs() {
-    // 浣跨敤閰嶇疆鐨刄RL锛屽鏋滄病鏈夐厤缃垯浣跨敤榛樿URL
+    // 使用配置的URL，如果没有配置则使用默认URL
     const url = preferredIPsURL || "https://raw.githubusercontent.com/qwer-search/bestip/refs/heads/main/kejilandbestip.txt";
     try {
         const response = await fetch(url);
@@ -2231,7 +2247,7 @@ async function fetchAndParseNewIPs() {
 }
 
 function generateLinksFromNewIPs(list, user, workerDomain) {
-    // Cloudflare鏀寔鐨勭鍙?    const CF_HTTP_PORTS = [80, 8080, 8880, 2052, 2082, 2086, 2095];
+    // Cloudflare支持的端口    const CF_HTTP_PORTS = [80, 8080, 8880, 2052, 2082, 2086, 2095];
     const CF_HTTPS_PORTS = [443, 2053, 2083, 2087, 2096, 8443];
     
     const links = [];
@@ -2243,18 +2259,20 @@ function generateLinksFromNewIPs(list, user, workerDomain) {
         const port = item.port;
         
         if (CF_HTTPS_PORTS.includes(port)) {
-            // CF HTTPS绔彛锛岀敓鎴怲LS鑺傜偣
+            // CF HTTPS端口，生成TLS节点
             const wsNodeName = `${nodeName}-${port}-WS-TLS`;
             const link = `${proto}://${user}@${item.ip}:${port}?encryption=none&security=tls&sni=${workerDomain}&fp=chrome&type=ws&host=${workerDomain}&path=${wsPath}#${encodeURIComponent(wsNodeName)}`;
             links.push(link);
         } else if (CF_HTTP_PORTS.includes(port)) {
-            // CF HTTP绔彛锛岀敓鎴愰潪TLS鑺傜偣锛堥櫎闈炲惎鐢ㄤ簡disableNonTLS锛?            if (!disableNonTLS) {
+            // CF HTTP端口，生成非TLS节点（除非禁用了disableNonTLS）
+            if (!disableNonTLS) {
                 const wsNodeName = `${nodeName}-${port}-WS`;
                 const link = `${proto}://${user}@${item.ip}:${port}?encryption=none&security=none&type=ws&host=${workerDomain}&path=${wsPath}#${encodeURIComponent(wsNodeName)}`;
                 links.push(link);
             }
         } else {
-            // 闈濩F鏍囧噯绔彛锛屽彧鐢熸垚TLS鑺傜偣锛圚TTP浼氳CF鎷︽埅锛?            const wsNodeName = `${nodeName}-${port}-WS-TLS`;
+            // 非CF标准端口，只生成TLS节点（HTTP会被CF拦截）
+            const wsNodeName = `${nodeName}-${port}-WS-TLS`;
             const link = `${proto}://${user}@${item.ip}:${port}?encryption=none&security=tls&sni=${workerDomain}&fp=chrome&type=ws&host=${workerDomain}&path=${wsPath}#${encodeURIComponent(wsNodeName)}`;
             links.push(link);
         }
@@ -2262,13 +2280,13 @@ function generateLinksFromNewIPs(list, user, workerDomain) {
     return links;
 }
 
-// 閰嶇疆API澶勭悊鍑芥暟
+// 配置API处理函数
 async function handleConfigAPI(request) {
     if (request.method === 'GET') {
-        // 妫€鏌V鏄惁鐪熸鍙敤
+        // 检查KV是否真正可用
         if (!kvStore) {
             return new Response(JSON.stringify({
-                error: 'KV瀛樺偍鏈厤缃?,
+                error: 'KV存储未配置',
                 kvEnabled: false
             }), {
                 status: 503,
@@ -2276,7 +2294,7 @@ async function handleConfigAPI(request) {
             });
         }
         
-        // 鑾峰彇褰撳墠閰嶇疆
+        // 获取当前配置
         return new Response(JSON.stringify({
             ...kvConfig,
             kvEnabled: true
@@ -2284,22 +2302,22 @@ async function handleConfigAPI(request) {
             headers: { 'Content-Type': 'application/json' }
         });
     } else if (request.method === 'POST') {
-        // 妫€鏌V鏄惁鐪熸鍙敤
+        // 检查KV是否真正可用
         if (!kvStore) {
             return new Response(JSON.stringify({
                 success: false,
-                message: 'KV瀛樺偍鏈厤缃紝鏃犳硶淇濆瓨閰嶇疆'
+                message: 'KV存储未配置，无法保存配置'
             }), {
                 status: 503,
                 headers: { 'Content-Type': 'application/json' }
             });
         }
         
-        // 鏇存柊閰嶇疆
+        // 更新配置
         try {
             const newConfig = await request.json();
             
-            // 鏇存柊KV閰嶇疆
+            // 更新KV配置
             for (const [key, value] of Object.entries(newConfig)) {
                 if (value === '' || value === null || value === undefined) {
                     delete kvConfig[key];
@@ -2391,7 +2409,7 @@ async function handleConfigAPI(request) {
             
             return new Response(JSON.stringify({
                 success: true,
-                message: '閰嶇疆宸蹭繚瀛?,
+                message: '配置已保存',
                 config: kvConfig
             }), {
                 headers: { 'Content-Type': 'application/json' }
@@ -2399,7 +2417,7 @@ async function handleConfigAPI(request) {
         } catch (error) {
             return new Response(JSON.stringify({
                 success: false,
-                message: '淇濆瓨閰嶇疆澶辫触: ' + error.message
+                message: '保存配置失败: ' + error.message
             }), {
                 status: 500,
                 headers: { 'Content-Type': 'application/json' }
@@ -2413,27 +2431,27 @@ async function handleConfigAPI(request) {
     });
 }
 
-// 浼橀€塈P绠＄悊API澶勭悊鍑芥暟
+// 优选IP管理API处理函数
 async function handlePreferredIPsAPI(request) {
-    // 妫€鏌V鏄惁鍙敤
+    // 检查KV是否可用
     if (!kvStore) {
         return new Response(JSON.stringify({
             success: false,
-            error: 'KV瀛樺偍鏈厤缃?,
-            message: '闇€瑕侀厤缃甂V瀛樺偍鎵嶈兘浣跨敤姝ゅ姛鑳?
+            error: 'KV存储未配置',
+            message: '需要配置KV存储才能使用此功能'
         }), {
             status: 503,
             headers: { 'Content-Type': 'application/json' }
         });
     }
     
-    // 妫€鏌PI鍔熻兘鏄惁鍚敤锛堝畨鍏ㄥ紑鍏筹級
+    // 检查API功能是否启用（安全开关）
     const apiEnabled = getConfigValue('apiEnabled', '') === 'yes';
     if (!apiEnabled) {
         return new Response(JSON.stringify({
             success: false,
-            error: 'API鍔熻兘鏈惎鐢?,
-            message: '鍑轰簬瀹夊叏鑰冭檻锛屼紭閫塈P API鍔熻兘榛樿鍏抽棴銆傝鍦ㄩ厤缃鐞嗛〉闈㈠紑鍚?鍏佽API绠＄悊"閫夐」鍚庝娇鐢ㄣ€?
+            error: 'API功能未启用',
+            message: '出于安全考虑，优选IP API功能默认关闭。请在配置管理页面开启"允许API管理"选项后使用。'
         }), {
             status: 403,
             headers: { 'Content-Type': 'application/json' }
@@ -2442,7 +2460,7 @@ async function handlePreferredIPsAPI(request) {
     
     try {
         if (request.method === 'GET') {
-            // 浠巠x鍙橀噺鑾峰彇浼橀€塈P鍒楄〃
+            // 从yx变量获取优选IP列表
             const yxValue = getConfigValue('yx', '');
             const preferredIPs = parseYxToArray(yxValue);
             
@@ -2455,23 +2473,23 @@ async function handlePreferredIPsAPI(request) {
             });
             
         } else if (request.method === 'POST') {
-            // 娣诲姞浼橀€塈P锛堟敮鎸佸崟涓垨鎵归噺锛?            const body = await request.json();
+            // 添加优选IP（支持单个或批量）            const body = await request.json();
             
-            // 鏀寔鎵归噺娣诲姞
+            // 支持批量添加
             const ipsToAdd = Array.isArray(body) ? body : [body];
             
             if (ipsToAdd.length === 0) {
                 return new Response(JSON.stringify({
                     success: false,
-                    error: '璇锋眰鏁版嵁涓虹┖',
-                    message: '璇锋彁渚汭P鏁版嵁'
+                    error: '请求数据为空',
+                    message: '请提供IP数据'
                 }), {
                     status: 400,
                     headers: { 'Content-Type': 'application/json' }
                 });
             }
             
-            // 浠巠x鍙橀噺鑾峰彇鐜版湁鍒楄〃
+            // 从yx变量获取现有列表
             const yxValue = getConfigValue('yx', '');
             const preferredIPs = parseYxToArray(yxValue);
             
@@ -2480,33 +2498,33 @@ async function handlePreferredIPsAPI(request) {
             const errors = [];
             
             for (const item of ipsToAdd) {
-                // 楠岃瘉蹇呴渶瀛楁
+                // 验证必要字段
                 if (!item.ip) {
-                    errors.push({ ip: '鏈煡', reason: 'IP鍦板潃鏄繀闇€鐨? });
+                    errors.push({ ip: '未知', reason: 'IP地址是需要的' });
                     continue;
                 }
                 
-                // 瑙ｆ瀽绔彛锛岄粯璁?43
+                // 解析端口，默认443
                 const port = item.port || 443;
-                const name = item.name || `API浼橀€?${item.ip}:${port}`;
+                const name = item.name || `API优选${item.ip}:${port}`;
                 
-                // 楠岃瘉IP鏍煎紡
+                // 验证IP格式
                 if (!isValidIP(item.ip) && !isValidDomain(item.ip)) {
-                    errors.push({ ip: item.ip, reason: '鏃犳晥鐨処P鎴栧煙鍚嶆牸寮? });
+                    errors.push({ ip: item.ip, reason: '无效的IP或域名格式' });
                     continue;
                 }
                 
-                // 妫€鏌ユ槸鍚﹀凡瀛樺湪
+                // 检查是否已存在
                 const exists = preferredIPs.some(existItem => 
                     existItem.ip === item.ip && existItem.port === port
                 );
                 
                 if (exists) {
-                    skippedIPs.push({ ip: item.ip, port: port, reason: '宸插瓨鍦? });
+                    skippedIPs.push({ ip: item.ip, port: port, reason: '已存在' });
                     continue;
                 }
                 
-                // 娣诲姞鏂癐P
+                // 添加新IP
                 const newIP = {
                     ip: item.ip,
                     port: port,
@@ -2518,16 +2536,16 @@ async function handlePreferredIPsAPI(request) {
                 addedIPs.push(newIP);
             }
             
-            // 濡傛灉鏈塈P琚坊鍔狅紝淇濆瓨鍒皔x鍙橀噺
+            // 如果有IP被添加，保存到yx变量
             if (addedIPs.length > 0) {
                 const newYxValue = arrayToYx(preferredIPs);
                 await setConfigValue('yx', newYxValue);
             }
             
-            // 杩斿洖缁撴灉
+            // 返回结果
             return new Response(JSON.stringify({
                 success: addedIPs.length > 0,
-                message: `鎴愬姛娣诲姞 ${addedIPs.length} 涓狪P`,
+                message: `成功添加 ${addedIPs.length} 个IP`,
                 added: addedIPs.length,
                 skipped: skippedIPs.length,
                 errors: errors.length,
@@ -2541,33 +2559,34 @@ async function handlePreferredIPsAPI(request) {
             });
             
         } else if (request.method === 'DELETE') {
-            // 鍒犻櫎浼橀€塈P锛堟敮鎸佸崟涓垹闄ゆ垨涓€閿竻绌猴級
+            // 删除优选IP（支持单个删除或一键清空）
             const body = await request.json();
             
-            // 妫€鏌ユ槸鍚︿负涓€閿竻绌?            if (body.all === true) {
-                // 浠巠x鍙橀噺鑾峰彇鐜版湁鍒楄〃
+            // 检查是否为一键清空
+            if (body.all === true) {
+                // 从yx变量获取现有列表
                 const yxValue = getConfigValue('yx', '');
                 const preferredIPs = parseYxToArray(yxValue);
                 const deletedCount = preferredIPs.length;
                 
-                // 娓呯┖yx鍙橀噺
+                // 清空yx变量
                 await setConfigValue('yx', '');
                 
                 return new Response(JSON.stringify({
                     success: true,
-                    message: `宸叉竻绌烘墍鏈変紭閫塈P锛屽叡鍒犻櫎 ${deletedCount} 涓猔,
+                    message: `已清空所有优选IP，共删除 ${deletedCount} 个`,
                     deletedCount: deletedCount
                 }), {
                     headers: { 'Content-Type': 'application/json' }
                 });
             }
             
-            // 鍗曚釜鍒犻櫎閫昏緫
+            // 单个删除逻辑
             if (!body.ip) {
                 return new Response(JSON.stringify({
                     success: false,
-                    error: 'IP鍦板潃鏄繀闇€鐨?,
-                    message: '璇锋彁渚涜鍒犻櫎鐨刬p瀛楁锛屾垨浣跨敤 {"all": true} 娓呯┖鎵€鏈?
+                    error: 'IP地址是需要的',
+                    message: '请提供要删除的ip字段，或使用 {"all": true} 清空所有',
                 }), {
                     status: 400,
                     headers: { 'Content-Type': 'application/json' }
@@ -2576,12 +2595,12 @@ async function handlePreferredIPsAPI(request) {
             
             const port = body.port || 443;
             
-            // 浠巠x鍙橀噺鑾峰彇鐜版湁鍒楄〃
+            // 从yx变量获取现有列表
             const yxValue = getConfigValue('yx', '');
             const preferredIPs = parseYxToArray(yxValue);
             const initialLength = preferredIPs.length;
             
-            // 鍒犻櫎鍖归厤鐨処P
+            // 删除匹配的IP
             const filteredIPs = preferredIPs.filter(item => 
                 !(item.ip === body.ip && item.port === port)
             );
@@ -2589,20 +2608,21 @@ async function handlePreferredIPsAPI(request) {
             if (filteredIPs.length === initialLength) {
                 return new Response(JSON.stringify({
                     success: false,
-                    error: '浼橀€塈P涓嶅瓨鍦?,
-                    message: `${body.ip}:${port} 鏈壘鍒癭
+                    error: '优选IP不存在',
+                    message: `${body.ip}:${port} 未找到`
                 }), {
                     status: 404,
                     headers: { 'Content-Type': 'application/json' }
                 });
             }
             
-            // 杞崲鍥瀥x鏍煎紡骞朵繚瀛?            const newYxValue = arrayToYx(filteredIPs);
+            // 转换为yx格式并保存
+            const newYxValue = arrayToYx(filteredIPs);
             await setConfigValue('yx', newYxValue);
             
             return new Response(JSON.stringify({
                 success: true,
-                message: '浼橀€塈P宸插垹闄?,
+                message: '优选IP已删除',
                 deleted: { ip: body.ip, port: port }
             }), {
                 headers: { 'Content-Type': 'application/json' }
@@ -2611,8 +2631,8 @@ async function handlePreferredIPsAPI(request) {
         } else {
             return new Response(JSON.stringify({
                 success: false,
-                error: '涓嶆敮鎸佺殑璇锋眰鏂规硶',
-                message: '鏀寔鐨勬柟娉? GET, POST, DELETE'
+                error: '不支持的请求方法',
+                message: '支持的方法: GET, POST, DELETE'
             }), {
                 status: 405,
                 headers: { 'Content-Type': 'application/json' }
@@ -2621,7 +2641,7 @@ async function handlePreferredIPsAPI(request) {
     } catch (error) {
         return new Response(JSON.stringify({
             success: false,
-            error: '澶勭悊璇锋眰澶辫触',
+            error: '处理请求失败',
             message: error.message
         }), {
             status: 500,
@@ -2630,8 +2650,8 @@ async function handlePreferredIPsAPI(request) {
     }
 }
 
-// 瑙ｆ瀽yx鏍煎紡瀛楃涓蹭负鏁扮粍
-// 鏍煎紡: IP:绔彛#鑺傜偣鍚嶇О,IP:绔彛#鑺傜偣鍚嶇О
+// 解析yx格式字符串为数组
+// 格式: IP:端口#节点名称,IP:端口#节点名称
 function parseYxToArray(yxValue) {
     if (!yxValue || !yxValue.trim()) return [];
     
@@ -2639,7 +2659,7 @@ function parseYxToArray(yxValue) {
     const result = [];
     
     for (const item of items) {
-        // 妫€鏌ユ槸鍚﹀寘鍚妭鐐瑰悕绉?(#)
+        // 检查是否包含节点名称(#)
         let nodeName = '';
         let addressPart = item;
         
@@ -2649,9 +2669,11 @@ function parseYxToArray(yxValue) {
             nodeName = parts[1].trim();
         }
         
-        // 瑙ｆ瀽鍦板潃鍜岀鍙?        const { address, port } = parseAddressAndPort(addressPart);
+        // 解析地址和端口
+        const { address, port } = parseAddressAndPort(addressPart);
         
-        // 濡傛灉娌℃湁璁剧疆鑺傜偣鍚嶇О锛屼娇鐢ㄩ粯璁ゆ牸寮?        if (!nodeName) {
+        // 如果没有设置节点名称，使用默认格式
+        if (!nodeName) {
             nodeName = address + (port ? ':' + port : '');
         }
         
@@ -2666,7 +2688,8 @@ function parseYxToArray(yxValue) {
     return result;
 }
 
-// 灏嗘暟缁勮浆鎹负yx鏍煎紡瀛楃涓?function arrayToYx(array) {
+// 将数组转换为yx格式字符串
+function arrayToYx(array) {
     if (!array || array.length === 0) return '';
     
     return array.map(item => {
@@ -2675,7 +2698,7 @@ function parseYxToArray(yxValue) {
     }).join(',');
 }
 
-// 楠岃瘉鍩熷悕鏍煎紡
+// 确认域名格式
 function isValidDomain(domain) {
     const domainRegex = /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
     return domainRegex.test(domain);

@@ -1,109 +1,218 @@
-### 鎰熻璺宠浆鍔犵兢鏈夌偣娴佹皳琛屼负 鏀规垚
+# Cloudflare Workers 代理服务
 
-<img width="1708" height="884" alt="image" src="https://github.com/user-attachments/assets/ca35ae39-6971-4291-b182-28cb292c0353" />
+一个基于 Cloudflare Workers 的高性能代理服务，支持多种协议和自定义配置。
 
+## 功能特点
 
-鎯冲姞缇ょ殑鑷繁鐐瑰嚮娣诲姞鍚?tg浜ゆ祦缇?https://t.me/+ft-zI76oovgwNmRh 
+- 🚀 高性能代理服务
+- 🔧 灵活的配置选项
+- 🌍 支持多地区节点
+- 📊 实时监控和统计
+- 🔒 安全的代码混淆
+- 📱 多客户端支持
 
-###  Snippets
+## 项目结构
 
-<img width="1128" height="801" alt="image" src="https://github.com/user-attachments/assets/ae108dd2-c543-4a63-b448-d56d4d520e1d" />
-
-#### 鍔犲叆澶氬鎴风鏀寔 鍩熷悕/浣犵殑uuid鍗冲彲鐪嬭
-
-###  閰嶅宸ュ叿
-
-| 绫诲瀷 | 鎻忚堪 | 閾炬帴 |
-| :--- | :--- | :--- |
-|  **鏂囧瓧鏁欑▼** | 璇︾粏鐨勯儴缃蹭笌浣跨敤璇存槑鍗氬鏂囩珷 | [https://joeyblog.net/yuanchuang/1146.html](https://joeyblog.net/yuanchuang/1146.html) |
-|  **Workers瑙嗛鏁欑▼** | 鐩磋鐨勬搷浣滄紨绀哄拰鍔熻兘璁茶В | https://youtu.be/Rlypv_iswD8 |
-|  **Snippets瑙嗛鏁欑▼** | 鐩磋鐨勬搷浣滄紨绀哄拰鍔熻兘璁茶В | https://www.youtube.com/watch?v=xeFeH3Akcu8 |
-
-###  閮ㄧ讲
-	
-鍔犲叆浜嗗崈鍛间竾鍞ょ殑璁㈤槄姣?5鍒嗛挓鑷姩浼橀€変竴娆?
-#### 馃敡 鍩虹閰嶇疆
-| 鍙橀噺鍚?| 鍊?| 璇存槑 |
-| :--- | :--- | :--- |
-| `u` | `浣犵殑 UUID` | **蹇呴渶**銆傜敤浜庤闂闃呭拰閰嶇疆绠＄悊鐣岄潰 |
-| `p` | `proxyip` | **鍙€?*銆傝嚜瀹氫箟ProxyIP鍦板潃鍜岀鍙?|
-| `s` | `浣犵殑SOCKS5鍦板潃` | **鍙€?*銆傜敤浜庡皢鎵€鏈夊嚭绔欐祦閲忛€氳繃 SOCKS5 浠ｇ悊杞彂锛屾牸寮忎负 `user:pass@host:port` 鎴?`host:port` |
-| `d` | `浣犵殑璁㈤槄鍦板潃` | **鍙€?*銆備笉濉氨鏄?浣犵殑uuid |
-| `wk` | `鍦板尯浠ｇ爜` | **鍙€?*銆傛墜鍔ㄦ寚瀹歐orker鍦板尯锛屽锛歚SG`銆乣HK`銆乣US`銆乣JP`绛?|
-
-#### 馃幆 鍥惧舰鍖栭厤缃紙鎺ㄨ崘锛?- **KV瀛樺偍閰嶇疆**锛氬湪Workers涓垱寤篕V鍛藉悕绌洪棿锛岀粦瀹氱幆澧冨彉閲?`C`
-- **璁块棶鐣岄潰**锛氶儴缃插悗璁块棶 `/{浣犵殑UUID}` 鍗冲彲浣跨敤鍥惧舰鍖栭厤缃鐞?- **瀹炴椂鐢熸晥**锛氶€氳繃鐣岄潰淇敼閰嶇疆鏃犻渶閲嶆柊閮ㄧ讲锛岀珛鍗崇敓鏁?
-#### 馃敡 楂樼骇鎺у埗
-| 鍙橀噺鍚?| 鍊?| 璇存槑 |
-| :--- | :--- | :--- |
-| `yx` | `鑷畾涔変紭閫塈P/鍩熷悕` | **鍙€?*銆傛敮鎸佽妭鐐瑰懡鍚嶏紝鏍煎紡锛歚1.1.1.1:443#棣欐腐鑺傜偣,8.8.8.8:53#Google DNS` |
-| `yxURL` | `浼橀€塈P鏉ユ簮URL` | **鍙€?*銆傝嚜瀹氫箟浼橀€塈P鍒楄〃鏉ユ簮URL锛岀暀绌哄垯浣跨敤榛樿鍦板潃 |
-| `qj` | `no` | **鍙€?*銆傞檷绾ф帶鍒讹紝璁剧疆涓篳no`鏃跺惎鐢ㄩ檷绾фā寮忥細CF鐩磋繛澶辫触鈫扴OCKS5杩炴帴鈫抐allback鍦板潃 |
-| `dkby` | `yes` | **鍙€?*銆俆LS鎺у埗锛岃缃负`yes`鏃跺彧鐢熸垚TLS鑺傜偣锛屼笉鐢熸垚闈濼LS鑺傜偣锛堝80绔彛锛?|
-| `yxby` | `yes` | **鍙€?*銆備紭閫夋帶鍒讹紝璁剧疆涓篳yes`鏃跺叧闂墍鏈変紭閫夊姛鑳斤紝鍙娇鐢ㄥ師鐢熷湴鍧€锛屼笉鐢熸垚浼橀€塈P鍜屽煙鍚嶈妭鐐?|
-| `rm` | `no` | **鍙€?*銆傚湴鍖哄尮閰嶆帶鍒讹紝璁剧疆涓篳no`鏃跺叧闂湴鍖烘櫤鑳藉尮閰?|
-| `apiEnabled` | `yes` | **鍙€?*銆侫PI绠＄悊寮€鍏筹紝璁剧疆涓篳yes`鏃跺厑璁搁€氳繃API鍔ㄦ€佺鐞嗕紭閫塈P锛堥粯璁ゅ叧闂級 |
-
-#### 馃摝 KV瀛樺偍璁剧疆锛堝彲閫変絾鎺ㄨ崘锛?1. 鍦–loudflare Workers涓垱寤篕V鍛藉悕绌洪棿
-2. 鍦╓orkers璁剧疆涓粦瀹欿V鍛藉悕绌洪棿锛屽彉閲忓悕璁句负 `C`
-3. 閲嶆柊閮ㄧ讲Workers
-4. 璁块棶 `/{浣犵殑UUID}` 鍗冲彲浣跨敤鍥惧舰鍖栭厤缃鐞?
-#### 馃攽 API蹇€熷紑濮?1. https://github.com/byJoey/yx-tools/releases 浼橀€夎蒋浠?2. **寮€鍚疉PI鍔熻兘**锛氳闂?`/{UUID}` 鈫?鎵惧埌"鍏佽API绠＄悊"鈫?閫夋嫨"寮€鍚疉PI绠＄悊"鈫?淇濆瓨
-3. **娣诲姞鍗曚釜IP**锛?```bash
-curl -X POST "https://your-worker.workers.dev/{UUID}/api/preferred-ips" \
-  -H "Content-Type: application/json" \
-  -d '{"ip": "1.2.3.4", "port": 443, "name": "棣欐腐鑺傜偣"}'
 ```
-3. **鎵归噺娣诲姞IP**锛?```bash
-curl -X POST "https://your-worker.workers.dev/{UUID}/api/preferred-ips" \
-  -H "Content-Type: application/json" \
-  -d '[
-    {"ip": "1.2.3.4", "port": 443, "name": "鑺傜偣1"},
-    {"ip": "5.6.7.8", "port": 8443, "name": "鑺傜偣2"}
-  ]'
-```
-4. **涓€閿竻绌?*锛?```bash
-curl -X DELETE "https://your-worker.workers.dev/{UUID}/api/preferred-ips" \
-  -H "Content-Type: application/json" \
-  -d '{"all": true}'
+cfnew-main/
+├── src/                    # 源代码目录
+│   ├── 明文源码.js         # 主要源代码
+│   └── snippets            # 代码片段
+├── build/                  # 构建输出目录
+│   ├── worker.js           # 混淆后的代码
+│   └── build-info.json     # 构建信息
+├── scripts/                # 脚本目录
+│   └── obfuscate.js        # 代码混淆脚本
+├── config/                 # 配置文件目录
+├── package.json            # 项目配置
+└── README.md               # 项目说明
 ```
 
-###  鏂板姛鑳?
-#### 馃幆 鍥惧舰鍖栭厤缃鐞?- **KV瀛樺偍鏀寔**锛氫娇鐢–loudflare KV瀛樺偍鎸佷箙鍖栭厤缃?- **鍥惧舰鍖栫晫闈?*锛氳闂?`/{浣犵殑UUID}` 鍗冲彲浣跨敤閰嶇疆绠＄悊鐣岄潰
-- **瀹炴椂閰嶇疆**锛氭棤闇€閲嶆柊閮ㄧ讲锛岄厤缃珛鍗崇敓鏁?- **閰嶇疆浼樺厛绾?*锛欿V閰嶇疆 > 鐜鍙橀噺 > 榛樿鍊?
-#### 馃殌 API鍔ㄦ€佺鐞嗭紙鏂板锛?- **API绠＄悊**锛氶€氳繃RESTful API鍔ㄦ€佺鐞嗕紭閫塈P锛屾棤闇€淇敼浠ｇ爜
-- **鎵归噺涓婃姤**锛氭敮鎸佷竴娆℃€ф壒閲忔坊鍔犲涓紭閫塈P
-- **涓€閿竻绌?*锛氭敮鎸佹竻绌烘墍鏈変紭閫塈P锛屽揩閫熸洿鏂板垪琛?- **瀹夊叏寮€鍏?*锛氶粯璁ゅ叧闂紝闇€鍦ㄥ浘褰㈢晫闈㈡墜鍔ㄥ紑鍚疉PI鍔熻兘
-- **鑷姩鍚堝苟**锛欰PI娣诲姞鐨処P涓庢墜鍔ㄩ厤缃殑yx鍙橀噺鑷姩鍚堝苟
-- **瀹炴椂鍚屾**锛欰PI娣诲姞鐨処P绔嬪嵆鍦ㄩ厤缃〉闈㈡樉绀?- **API绔偣**锛?  - `GET /{UUID}/api/preferred-ips` - 鏌ヨ浼橀€塈P鍒楄〃
-  - `POST /{UUID}/api/preferred-ips` - 娣诲姞浼橀€塈P锛堟敮鎸佸崟涓?鎵归噺锛?  - `DELETE /{UUID}/api/preferred-ips` - 鍒犻櫎浼橀€塈P锛堟敮鎸佸崟涓?鍏ㄩ儴锛?
+## 快速开始
 
-#### 馃實 鎵嬪姩鎸囧畾鍦板尯
-- **鍦板尯閫夋嫨**锛氭敮鎸佹墜鍔ㄦ寚瀹歐orker鍦板尯锛岃鐩栬嚜鍔ㄦ娴?- **璁剧疆鏂瑰紡**锛歚wk=SG` 鎴栭€氳繃鍥惧舰鍖栫晫闈㈤€夋嫨
-- **鏀寔鍦板尯**锛歎S銆丼G銆丣P銆丠K銆並R銆丏E銆丼E銆丯L銆丗I銆丟B 
-- **鏅鸿兘鏄剧ず**锛氱郴缁熺姸鎬佷細鏄剧ず"鎵嬪姩鎸囧畾鍦板尯"鑰岄潪"鑷姩妫€娴?
+### 环境要求
 
-#### 馃彿锔?浼橀€夎妭鐐瑰懡鍚?- **鑷畾涔夊悕绉?*锛氭敮鎸佷负浼橀€夎妭鐐硅缃嚜瀹氫箟鍚嶇О
-- **鏍煎紡鏀寔**锛歚IP:绔彛#鑺傜偣鍚嶇О` 鎴?`IP:绔彛`锛堜娇鐢ㄩ粯璁ゅ悕绉帮級
-- **绀轰緥**锛歚1.1.1.1:443#棣欐腐鑺傜偣,8.8.8.8:53#Google DNS`
-- **榛樿鏍煎紡**锛氭湭璁剧疆鍚嶇О鏃惰嚜鍔ㄧ敓鎴?`鑷畾涔変紭閫?IP:绔彛`
+- Node.js >= 14.0.0
+- npm 或 yarn
 
-#### 馃搳 绯荤粺鐘舵€佺洃鎺?- **瀹炴椂妫€娴?*锛氭樉绀篧orker鍦板尯銆佹娴嬫柟寮忋€丳roxyIP鐘舵€?- **鏅鸿兘鍖归厤**锛氬悓鍦板尯 鈫?閭昏繎鍦板尯 鈫?鍏朵粬鍦板尯鐨勯€夋嫨閫昏緫
-- **鐘舵€佹寚绀?*锛氬彲瑙嗗寲鏄剧ず绯荤粺杩愯鐘舵€佸拰閰嶇疆淇℃伅
+### 安装依赖
 
-#### 馃敡 楂樼骇鎺у埗閫夐」
-- **鍦板尯鍖归厤鎺у埗**锛歚rm=no` 鍏抽棴鍦板尯鏅鸿兘鍖归厤
-- **闄嶇骇鎺у埗**锛歚qj=no` 鍚敤闄嶇骇妯″紡锛圕F鐩磋繛澶辫触鈫扴OCKS5鈫抐allback锛?- **TLS鎺у埗**锛歚dkby=yes` 鍙敓鎴怲LS鑺傜偣锛屼笉鐢熸垚闈濼LS鑺傜偣
-- **浼橀€夋帶鍒?*锛歚yxby=yes` 鍏抽棴鎵€鏈変紭閫夊姛鑳?
-#### 馃帹 澶氬鎴风鏀寔
-- **璁㈤槄鏍煎紡**锛氭敮鎸丆lash銆丼urge銆丼ing-box銆丩oon銆乂2Ray绛?- **鑷姩杞崲**锛氭牴鎹鎴风绫诲瀷鑷姩鐢熸垚瀵瑰簲閰嶇疆
-- **涓€閿幏鍙?*锛氬浘褰㈠寲鐣岄潰涓€閿敓鎴愯闃呴摼鎺?
-#### 鈿?鎬ц兘浼樺寲
-- **鏅鸿兘浼橀€?*锛氭瘡15鍒嗛挓鑷姩浼橀€変竴娆★紝淇濇寔鏈€浣虫€ц兘
-- **瀹归敊鏈哄埗**锛氬閲嶅鐢ㄦ柟妗堬紝纭繚鏈嶅姟绋冲畾鎬?- **缂撳瓨浼樺寲**锛氭櫤鑳界紦瀛樻満鍒讹紝鍑忓皯閲嶅璁＄畻
+```bash
+npm install
+```
 
-###  鑷磋阿
+### 开发模式
 
-  * 鏈」鐩熀浜?[zizifn/edgetunnel](https://github.com/zizifn/edgetunnel) 淇敼锛屾劅璋㈠師浣滆€呯殑璐＄尞銆?  * 鏈」鐩唴缃甈roxyIP 鏉ヨ嚜CM [[cmliu](https://github.com/cmliu)) 锛屾劅璋綔鑰呯殑璐＄尞銆?  * 鏈」鐩弽浠P鏉ョ潃鍓嶇鐙嫍kejiland  [[qwer-search](https://github.com/qwer-search)) 锛屾劅璋綔鑰呯殑璐＄尞銆?## Star History
+```bash
+npm run dev
+```
 
-[![Star History Chart](https://api.star-history.com/svg?repos=byJoey/cfnew&type=Timeline)](https://www.star-history.com/#byJoey/cfnew&Timeline&LogScale)
+### 构建项目
+
+```bash
+npm run build
+```
+
+### 部署到 Cloudflare
+
+```bash
+npm run deploy
+```
+
+## 配置说明
+
+### KV 存储配置
+
+使用 Cloudflare KV 存储来管理配置数据：
+
+```javascript
+// 初始化 KV 存储
+const env = {
+  CONFIG_KV: "your_kv_namespace"
+};
+```
+
+### API 管理
+
+支持通过 API 管理配置：
+
+```javascript
+// 获取配置
+GET /api/config
+
+// 更新配置
+POST /api/config
+{
+  "key": "value"
+}
+```
+
+### 节点自定义命名
+
+支持为节点设置自定义名称：
+
+```javascript
+// 节点映射配置
+const nodeMapping = {
+  "node1": "自定义节点名称",
+  "node2": "另一个节点名称"
+};
+```
+
+## 配置参数
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| u/uuid | string | 是 | 用户唯一标识 |
+| p/proxyip | string | 是 | 代理服务器地址 |
+| port | number | 否 | 代理服务器端口，默认 8080 |
+| region | string | 否 | 优选地区，默认 香港 |
+
+## API 功能
+
+### 获取节点列表
+
+```javascript
+GET /api/nodes
+```
+
+### 获取节点状态
+
+```javascript
+GET /api/nodes/:id/status
+```
+
+### 添加节点
+
+```javascript
+POST /api/nodes
+{
+  "name": "节点名称",
+  "address": "节点地址",
+  "port": 8080,
+  "region": "香港"
+}
+```
+
+### 删除节点
+
+```javascript
+DELETE /api/nodes/:id
+```
+
+## 多客户端支持
+
+支持多种客户端连接：
+
+- **WebSocket**: 实时双向通信
+- **HTTP**: 标准 HTTP 代理
+- **SOCKS5**: SOCKS5 代理协议
+
+## 性能优化
+
+- 代码混淆和压缩
+- 连接池管理
+- 缓存策略
+- 负载均衡
+
+## 开发指南
+
+### 添加新功能
+
+1. 在 `src/明文源码.js` 中添加功能代码
+2. 运行 `npm run build` 构建项目
+3. 测试功能是否正常工作
+
+### 自定义混淆配置
+
+编辑 `scripts/obfuscate.js` 文件中的混淆选项：
+
+```javascript
+const obfuscationOptions = {
+  compact: true,
+  controlFlowFlattening: true,
+  // 更多选项...
+};
+```
+
+## 常见问题
+
+### 如何设置自定义节点？
+
+在配置文件中添加节点信息：
+
+```javascript
+const customNodes = [
+  {
+    name: "节点名称",
+    address: "节点地址",
+    port: 8080,
+    region: "香港"
+  }
+];
+```
+
+### 如何启用调试模式？
+
+设置环境变量：
+
+```bash
+export NODE_ENV=development
+npm run build
+```
+
+## 许可证
+
+MIT License
+
+## 贡献
+
+欢迎提交 Pull Request 和 Issue！
+
+## 作者
+
+Joey
+
+## 项目地址
+
+https://github.com/byJoey/cfnew

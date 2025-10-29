@@ -1,11 +1,43 @@
 {
+  "name": "cf-workers-proxy",
+  "version": "1.0.0",
+  "description": "Cloudflare Workers 代理服务，支持多客户端配置和智能IP选择",
+  "main": "src/明文源码.js",
+  "scripts": {
+    "build": "node scripts/cli.js build",
+    "dev": "node scripts/cli.js dev",
+    "clean": "node scripts/cli.js clean",
+    "deploy": "node scripts/cli.js deploy",
+    "config": "node scripts/cli.js config",
+    "obfuscate": "node scripts/obfuscate.js",
+    "start": "npm run build && npm run deploy",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "proxy",
+    "vless",
+    "websocket"
+  ],
+  "author": "Joey",
+  "license": "MIT",
   "dependencies": {
     "node-fetch": "^3.3.2"
   },
   "devDependencies": {
-    "javascript-obfuscator": "^4.0.2"
+    "javascript-obfuscator": "^4.0.2",
+    "wrangler": "^3.0.0",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0",
+    "rimraf": "^5.0.0"
   },
-  "scripts": {
-    "obfuscate": "node obfuscate.js"
-  }
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/byJoey/cfnew.git"
+  },
+  "bugs": {
+    "url": "https://github.com/byJoey/cfnew/issues"
+  },
+  "homepage": "https://github.com/byJoey/cfnew#readme"
 }

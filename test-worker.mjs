@@ -4,11 +4,11 @@ fetch('http://127.0.0.1:8787')
   .then(res => res.text())
   .then(data => {
     console.log('Worker response length:', data.length);
-    // 妫€鏌ュ搷搴旀槸鍚﹀寘鍚鏈熺殑鍐呭
+    // 检查响应是否包含预期的内容
     if (data.length > 0) {
-      console.log('鉁?Worker is functioning correctly');
+      console.log('✓ Worker is functioning correctly');
     } else {
-      console.log('鉁?Worker response is empty');
+      console.log('✗ Worker response is empty');
     }
   })
   .catch(error => {
