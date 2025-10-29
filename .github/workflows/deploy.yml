@@ -6,10 +6,10 @@ on:
     branches:
       - main
     paths:
-      - '少年你相信光吗.js'
-      - '明文源码.js'
+      - '灏戝勾浣犵浉淇″厜鍚?js'
+      - '鏄庢枃婧愮爜.js'
   schedule:
-    - cron: '15 * * * *'  # 每小时过15分钟执行，确保在混淆之后执行
+    - cron: '15 * * * *'  # 姣忓皬鏃惰繃15鍒嗛挓鎵ц锛岀‘淇濆湪娣锋穯涔嬪悗鎵ц
 
 jobs:
   deploy:
@@ -28,8 +28,8 @@ jobs:
 
       - name: Check if obfuscated file exists
         run: |
-          if [ ! -f "少年你相信光吗" ]; then
-            echo "Error: Obfuscated file '少年你相信光吗' not found!"
+          if [ ! -f "灏戝勾浣犵浉淇″厜鍚? ]; then
+            echo "Error: Obfuscated file '灏戝勾浣犵浉淇″厜鍚? not found!"
             exit 1
           fi
 
