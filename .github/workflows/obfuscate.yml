@@ -3,11 +3,9 @@ name: Generate and Obfuscate Worker Script
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 * * * *'  # 每小时执行一次
-  push:
+    - cron: '0 * * * *'  # 姣忓皬鏃舵墽琛屼竴娆?  push:
     branches:
-      - main  # 当main分支有推送时也触发
-
+      - main  # 褰搈ain鍒嗘敮鏈夋帹閫佹椂涔熻Е鍙?
 jobs:
   build-and-obfuscate:
     runs-on: ubuntu-latest
@@ -26,7 +24,7 @@ jobs:
 
       - name: Obfuscate source code
       run: |
-        npx javascript-obfuscator "明文源码.js" --output "./少年你相信光吗.js" --compact true --control-flow-flattening true --control-flow-flattening-threshold 0.1 --string-array true --string-array-threshold 0.75
+        npx javascript-obfuscator "鏄庢枃婧愮爜.js" --output "./灏戝勾浣犵浉淇″厜鍚?js" --compact true --control-flow-flattening true --control-flow-flattening-threshold 0.1 --string-array true --string-array-threshold 0.75
 
       - name: Generate version info
         run: |
@@ -35,16 +33,15 @@ jobs:
 
       - name: Add version info to obfuscated file
         run: |
-          # 在混淆文件开头添加版本信息注释
-          echo "// Build time: ${{ env.BUILD_TIME }}" | cat - "少年你相信光吗" > temp && mv temp "少年你相信光吗"
-          echo "// Commit hash: ${{ env.COMMIT_HASH }}" | cat - "少年你相信光吗" > temp && mv temp "少年你相信光吗"
-          echo "// GitHub Actions Run ID: ${{ github.run_id }}" | cat - "少年你相信光吗" > temp && mv temp "少年你相信光吗"
+          # 鍦ㄦ贩娣嗘枃浠跺紑澶存坊鍔犵増鏈俊鎭敞閲?          echo "// Build time: ${{ env.BUILD_TIME }}" | cat - "灏戝勾浣犵浉淇″厜鍚? > temp && mv temp "灏戝勾浣犵浉淇″厜鍚?
+          echo "// Commit hash: ${{ env.COMMIT_HASH }}" | cat - "灏戝勾浣犵浉淇″厜鍚? > temp && mv temp "灏戝勾浣犵浉淇″厜鍚?
+          echo "// GitHub Actions Run ID: ${{ github.run_id }}" | cat - "灏戝勾浣犵浉淇″厜鍚? > temp && mv temp "灏戝勾浣犵浉淇″厜鍚?
 
       - name: Commit and push the obfuscated file
         run: |
           git config --global user.name 'GitHub Actions Bot'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add '少年你相信光吗'
+          git add '灏戝勾浣犵浉淇″厜鍚?
           if git diff --staged --quiet; then
             echo "No changes to commit, the obfuscated file is already up-to-date."
           else

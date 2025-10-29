@@ -1,11 +1,11 @@
 import { connect } from 'cloudflare:sockets';
 
-// --- 硬编码配置 ---
+// --- 纭紪鐮侀厤缃?---
 const authToken = 'f64bdc57-0f54-4705-bf75-cfd646d98c06';
 const fallbackAddress = 'ProxyIP.cmliussss.net';
 const fallbackPort = '443';
 const socks5Config = '';
-// API地址配置
+// API鍦板潃閰嶇疆
 const apiBaseUrl = 'https://s.jhb.edu.kg/sub';
 
 const directDomains = [
@@ -53,21 +53,20 @@ export default {
 				return await handleWsRequest(request);
 			} else if (request.method === 'GET') {
 				if (url.pathname === '/') {
-					const successHtml = `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>部署成功</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background-color:#121212;color:#e0e0e0;text-align:center;}.container{padding:2rem;border-radius:8px;background-color:#1e1e1e;box-shadow:0 4px 6px rgba(0,0,0,0.1);}h1{color:#4caf50;}</style></head><body><div class="container"><h1>✅ 部署成功</h1><p>请继续后面的操作。</p></div></body></html>`;
+					const successHtml = `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>閮ㄧ讲鎴愬姛</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background-color:#121212;color:#e0e0e0;text-align:center;}.container{padding:2rem;border-radius:8px;background-color:#1e1e1e;box-shadow:0 4px 6px rgba(0,0,0,0.1);}h1{color:#4caf50;}</style></head><body><div class="container"><h1>鉁?閮ㄧ讲鎴愬姛</h1><p>璇风户缁悗闈㈢殑鎿嶄綔銆?/p></div></body></html>`;
 					return new Response(successHtml, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 				}
-				// 支持UUID路径：/uuid - 显示图形化界面
-				if (url.pathname.length > 1 && url.pathname !== '/' && !url.pathname.includes('/sub')) {
-					const uuid = url.pathname.replace(/\/$/, '').substring(1); // 移除末尾斜杠
+				// 鏀寔UUID璺緞锛?uuid - 鏄剧ず鍥惧舰鍖栫晫闈?				if (url.pathname.length > 1 && url.pathname !== '/' && !url.pathname.includes('/sub')) {
+					const uuid = url.pathname.replace(/\/$/, '').substring(1); // 绉婚櫎鏈熬鏂滄潬
 					if (isValidFormat(uuid)) {
 						if (uuid === authToken) {
 							return await handleSubscriptionPage(request, uuid);
 						} else {
-							return new Response('UUID错误', { status: 403 });
+							return new Response('UUID閿欒', { status: 403 });
 						}
 					}
 				}
-				// 支持UUID/sub路径：/uuid/sub - 返回订阅
+				// 鏀寔UUID/sub璺緞锛?uuid/sub - 杩斿洖璁㈤槄
 				if (url.pathname.includes('/sub')) {
 					const pathParts = url.pathname.split('/');
 					if (pathParts.length === 2 && pathParts[1] === 'sub') {
@@ -76,12 +75,12 @@ export default {
 							if (uuid === authToken) {
 								return await handleSubscriptionRequest(request, uuid, url);
 							} else {
-								return new Response('UUID错误', { status: 403 });
+								return new Response('UUID閿欒', { status: 403 });
 							}
 						}
 					}
 				}
-				// 保持向后兼容
+				// 淇濇寔鍚戝悗鍏煎
 				if (url.pathname.toLowerCase().includes(`/${authToken}`)) {
 					return await handleSubscriptionRequest(request, authToken);
 				}
@@ -101,7 +100,7 @@ async function handleSubscriptionPage(request, uuid = null) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>订阅中心</title>
+    <title>璁㈤槄涓績</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -213,14 +212,14 @@ async function handleSubscriptionPage(request, uuid = null) {
 <body>
     <div class="matrix-bg"></div>
     <div class="matrix-rain"></div>
-    <div class="matrix-text">代理订阅中心 v0.1</div>
+    <div class="matrix-text">浠ｇ悊璁㈤槄涓績 v0.1</div>
     <div class="container">
         <div class="header">
-            <h1 class="title">代理订阅中心</h1>
-            <p class="subtitle">多客户端支持 • 智能优选 • 一键生成</p>
+            <h1 class="title">浠ｇ悊璁㈤槄涓績</h1>
+            <p class="subtitle">澶氬鎴风鏀寔 鈥?鏅鸿兘浼橀€?鈥?涓€閿敓鎴?/p>
         </div>
         <div class="card">
-            <h2 class="card-title">[ 选择客户端 ]</h2>
+            <h2 class="card-title">[ 閫夋嫨瀹㈡埛绔?]</h2>
             <div class="client-grid">
                 <button class="client-btn" onclick="generateClientLink('clash')">CLASH</button>
                 <button class="client-btn" onclick="generateClientLink('surge')">SURGE</button>
@@ -231,14 +230,14 @@ async function handleSubscriptionPage(request, uuid = null) {
             <div class="subscription-url" id="clientSubscriptionUrl"></div>
         </div>
         <div class="card">
-            <h2 class="card-title">[ 快速获取 ]</h2>
-            <button class="generate-btn" onclick="getBase64Subscription()">获取订阅链接</button>
+            <h2 class="card-title">[ 蹇€熻幏鍙?]</h2>
+            <button class="generate-btn" onclick="getBase64Subscription()">鑾峰彇璁㈤槄閾炬帴</button>
             <div class="subscription-url" id="base64SubscriptionUrl"></div>
         </div>
         <div class="card">
-            <h2 class="card-title">[ 相关链接 ]</h2>
+            <h2 class="card-title">[ 鐩稿叧閾炬帴 ]</h2>
             <div style="text-align: center; margin: 20px 0;">
-                <a href="https://github.com/byJoey/cfnew" target="_blank" style="color: #00ff00; text-decoration: none; margin: 0 20px; font-size: 1.2rem; text-shadow: 0 0 5px #00ff00;">GitHub 项目</a>
+                <a href="https://github.com/byJoey/cfnew" target="_blank" style="color: #00ff00; text-decoration: none; margin: 0 20px; font-size: 1.2rem; text-shadow: 0 0 5px #00ff00;">GitHub 椤圭洰</a>
                 <a href="https://www.youtube.com/@joeyblog" target="_blank" style="color: #00ff00; text-decoration: none; margin: 0 20px; font-size: 1.2rem; text-shadow: 0 0 5px #00ff00;">YouTube @joeyblog</a>
             </div>
         </div>
@@ -248,15 +247,15 @@ async function handleSubscriptionPage(request, uuid = null) {
             var currentUrl = window.location.href;
             var subscriptionUrl = currentUrl + "/sub";
             
-            // V2RAY 不需要转换，直接返回原始订阅
+            // V2RAY 涓嶉渶瑕佽浆鎹紝鐩存帴杩斿洖鍘熷璁㈤槄
             if (clientType === 'v2ray') {
                 document.getElementById("clientSubscriptionUrl").textContent = subscriptionUrl;
                 document.getElementById("clientSubscriptionUrl").style.display = "block";
                 navigator.clipboard.writeText(subscriptionUrl).then(function() {
-                    alert("V2Ray 订阅链接已复制");
+                    alert("V2Ray 璁㈤槄閾炬帴宸插鍒?);
                 });
             } else {
-                // 其他客户端需要通过API转换
+                // 鍏朵粬瀹㈡埛绔渶瑕侀€氳繃API杞崲
                 var encodedUrl = encodeURIComponent(subscriptionUrl);
                 var apiUrl = "https://s.jhb.edu.kg/sub?target=" + clientType + "&url=" + encodedUrl + "&insert=false";
                 document.getElementById("clientSubscriptionUrl").textContent = apiUrl;
@@ -265,7 +264,7 @@ async function handleSubscriptionPage(request, uuid = null) {
                     var displayName = clientType.toUpperCase();
                     if (clientType === 'surge') displayName = 'SURGE';
                     if (clientType === 'singbox') displayName = 'SING-BOX';
-                    alert(displayName + " 订阅链接已复制");
+                    alert(displayName + " 璁㈤槄閾炬帴宸插鍒?);
                 });
             }
         }
@@ -273,7 +272,7 @@ async function handleSubscriptionPage(request, uuid = null) {
             var currentUrl = window.location.href;
             var subscriptionUrl = currentUrl + "/sub";
             
-            // 直接获取Base64订阅内容
+            // 鐩存帴鑾峰彇Base64璁㈤槄鍐呭
             fetch(subscriptionUrl)
                 .then(function(response) {
                     return response.text();
@@ -282,12 +281,12 @@ async function handleSubscriptionPage(request, uuid = null) {
                     document.getElementById("base64SubscriptionUrl").textContent = base64Content;
                     document.getElementById("base64SubscriptionUrl").style.display = "block";
                     navigator.clipboard.writeText(base64Content).then(function() {
-                        alert("Base64订阅内容已复制");
+                        alert("Base64璁㈤槄鍐呭宸插鍒?);
                     });
                 })
                 .catch(function(error) {
-                    console.error("获取订阅失败:", error);
-                    alert("获取订阅失败，请重试");
+                    console.error("鑾峰彇璁㈤槄澶辫触:", error);
+                    alert("鑾峰彇璁㈤槄澶辫触锛岃閲嶈瘯");
                 });
         }
     </script>
@@ -307,7 +306,7 @@ async function handleSubscriptionRequest(request, uuid, url = null) {
     const workerDomain = url.hostname;
     const target = url.searchParams.get('target') || 'base64';
 
-    const nativeList = [{ ip: workerDomain, isp: '原生地址' }];
+    const nativeList = [{ ip: workerDomain, isp: '鍘熺敓鍦板潃' }];
     finalLinks.push(...generateLinksFromSource(nativeList, uuid, workerDomain));
 
     const domainList = directDomains.map(d => ({ ip: d.domain, isp: d.name || d.domain }));
@@ -324,7 +323,7 @@ async function handleSubscriptionRequest(request, uuid, url = null) {
     }
 
     if (finalLinks.length === 0) {
-        const errorRemark = "所有节点获取失败";
+        const errorRemark = "鎵€鏈夎妭鐐硅幏鍙栧け璐?;
         const errorLink = `vless://00000000-0000-0000-0000-000000000000@127.0.0.1:80?encryption=none&security=none&type=ws&host=error.com&path=%2F#${encodeURIComponent(errorRemark)}`;
         finalLinks.push(errorLink);
     }
@@ -484,8 +483,7 @@ function generateLinksFromNewIPs(list, uuid, workerDomain) {
     return links;
 }
 
-// 简化的客户端格式生成函数
-async function generateClashConfig(links) {
+// 绠€鍖栫殑瀹㈡埛绔牸寮忕敓鎴愬嚱鏁?async function generateClashConfig(links) {
     const config = {
         port: 7890,
         'socks-port': 7891,
@@ -550,13 +548,13 @@ dns-server = 8.8.8.8, 1.1.1.1
     }
 
     config += `\n\n[Proxy Group]
-节点选择 = select, auto
+鑺傜偣閫夋嫨 = select, auto
 auto = url-test, `;
 
     const nodeNames = [];
     for (const link of links) {
         if (link.startsWith('vless://')) {
-            const name = decodeURIComponent(link.split('#')[1] || '节点');
+            const name = decodeURIComponent(link.split('#')[1] || '鑺傜偣');
             nodeNames.push(name);
         }
     }
@@ -567,7 +565,7 @@ interval = 300
 
 [Rule]
 GEOIP,CN,DIRECT
-FINAL,节点选择`;
+FINAL,鑺傜偣閫夋嫨`;
 
     return config;
 }
@@ -592,18 +590,18 @@ server_remote = `;
         }
     }
     config += `\n\n[policy]
-static = 节点选择, `;
+static = 鑺傜偣閫夋嫨, `;
     
     const nodeNames = [];
     for (const link of links) {
         if (link.startsWith('vless://')) {
-            const name = decodeURIComponent(link.split('#')[1] || '节点');
+            const name = decodeURIComponent(link.split('#')[1] || '鑺傜偣');
             nodeNames.push(name);
         }
     }
     config += nodeNames.join(', ');
     config += `\n\n[filter]
-FINAL, 节点选择`;
+FINAL, 鑺傜偣閫夋嫨`;
     
     return config;
 }
@@ -644,8 +642,7 @@ dns-server = 8.8.8.8, 1.1.1.1
     return config;
 }
 
-// WebSocket处理函数（简化版）
-async function handleWsRequest(request) {
+// WebSocket澶勭悊鍑芥暟锛堢畝鍖栫増锛?async function handleWsRequest(request) {
     const wsPair = new WebSocketPair();
     const [clientSock, serverSock] = Object.values(wsPair);
     serverSock.accept();
