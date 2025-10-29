@@ -1,9 +1,9 @@
 # wrangler.toml
-name = "buddha-jumps-over-thewall"  # 与你的Worker名称一致
-compatibility_date = "2025-10-27"  # 与运行时兼容日期一致
+name = "buddha-jumps-over-thewall2"  # 与Cloudflare Workers中的名称一致
+compatibility_date = "2025-10-29"  # 与运行时兼容日期一致
 
-# 入口文件（混淆cate.yml生成的混淆文件）
-main = "少年你相信光吗"
+# 入口文件（混淆后的文件）
+main = "少年你相信光吗.js"
 
 # KV存储绑定（使用你的KV ID）
 [[kv_namespaces]]

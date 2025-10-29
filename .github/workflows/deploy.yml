@@ -28,8 +28,8 @@ jobs:
 
       - name: Check if obfuscated file exists
         run: |
-          if [ ! -f "少年你相信光吗" ]; then
-            echo "Error: Obfuscated file '少年你相信光吗' not found!"
+          if [ ! -f "少年你相信光吗.js" ]; then
+            echo "Error: Obfuscated file '少年你相信光吗.js' not found!"
             exit 1
           fi
 
@@ -37,6 +37,6 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
-          command: deploy --name buddha-jumps-over-thewall --compatibility-date 2025-10-27
+          command: deploy --name buddha-jumps-over-thewall2 --compatibility-date 2025-10-29
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
