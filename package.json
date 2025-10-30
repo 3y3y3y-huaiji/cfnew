@@ -23,9 +23,9 @@
   "author": "Joey",
   "license": "MIT",
   "dependencies": {
-    "node-fetch": "^3.3.2"
   },
   "devDependencies": {
+    "node-fetch": "^3.3.2",
     "javascript-obfuscator": "^4.0.2",
     "wrangler": "^3.0.0",
     "eslint": "^8.0.0",
