@@ -6,7 +6,6 @@ on:
     branches:
       - '**'  # 仅匹配分支推送，排除标签推送
     paths:
-<<<<<<< HEAD
       - '少年你相信光吗'  # 只关注混淆后的文件
 
 jobs:
@@ -28,9 +27,7 @@ jobs:
           node-version: '18'
 
       - name: Install Obfuscator
-        run: npm install javascript-obfuscator
-
-<<<<<<< HEAD
+        run: pnpm install javascript-obfuscator
       - name: Obfuscate from obfuscated file (for incremental updates)
         run: |
           cat > obfuscate.js << 'EOF'
@@ -38,7 +35,6 @@ jobs:
           const fs = require('fs');
           const path = require('path');
           
-<<<<<<< HEAD
           const sourceFileName = '少年你相信光吗'; // 使用混淆后的文件作为源
           const outputFileName = '少年你相信光吗'; // 输出到同一个文件
           const sourceFilePath = path.join(process.cwd(), sourceFileName);
