@@ -1,0 +1,8 @@
+0000000000000000000000000000000000000000 b9633ba17522ef234abe0e781678698b15a9bb80 cfnew-main <cfnew-main@example.com> 1763565568 +0800	commit (initial): 自动构建与混淆功能实现，仓库同步
+b9633ba17522ef234abe0e781678698b15a9bb80 d56f83665a90886bb607d62536976ce475d7d445 cfnew-main <cfnew-main@example.com> 1763568972 +0800	commit: 更新项目状态文档并添加obfuscate.js文件
+d56f83665a90886bb607d62536976ce475d7d445 d56f83665a90886bb607d62536976ce475d7d445 cfnew-main <cfnew-main@example.com> 1763569631 +0800	reset: moving to HEAD
+d56f83665a90886bb607d62536976ce475d7d445 667ca61215c2510ef3f1fb9cd00b5560223c0aee cfnew-main <cfnew-main@example.com> 1763569765 +0800	commit (merge): 解决合并冲突，更新项目文档和配置
+667ca61215c2510ef3f1fb9cd00b5560223c0aee 3b05beb51b9f70c4b35876f602846a9a2cf71197 cfnew-main <cfnew-main@example.com> 1763570151 +0800	commit: 修复构建失败问题：将snippets从文件改为目录
+3b05beb51b9f70c4b35876f602846a9a2cf71197 65d770bf944631b7e1abf88ac9d3414e82778cd0 cfnew-main <cfnew-main@example.com> 1763570486 +0800	commit: 修复构建失败：在工作流中禁用子模块更新
+65d770bf944631b7e1abf88ac9d3414e82778cd0 4a59270a96cdd948452466af1d280d059e4613a6 cfnew-main <cfnew-main@example.com> 1763570575 +0800	commit: 更新文档：记录构建失败修复的详细信息
+4a59270a96cdd948452466af1d280d059e4613a6 431e1cde2c2d1d169f51cfd3bc6f7edba167b2bf cfnew-main <cfnew-main@example.com> 1763609435 +0800	commit: 修复构建失败：增强工作流配置以彻底禁用子模块更新

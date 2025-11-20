@@ -1,0 +1,6 @@
+0000000000000000000000000000000000000000 85406ba4b9bef8cc3e30e710ec2359f9799b46ca cfnew-main <cfnew-main@example.com> 1763569605 +0800	pull --depth=1: storing head
+85406ba4b9bef8cc3e30e710ec2359f9799b46ca 667ca61215c2510ef3f1fb9cd00b5560223c0aee cfnew-main <cfnew-main@example.com> 1763569777 +0800	update by push
+667ca61215c2510ef3f1fb9cd00b5560223c0aee 3b05beb51b9f70c4b35876f602846a9a2cf71197 cfnew-main <cfnew-main@example.com> 1763570391 +0800	update by push
+3b05beb51b9f70c4b35876f602846a9a2cf71197 65d770bf944631b7e1abf88ac9d3414e82778cd0 cfnew-main <cfnew-main@example.com> 1763570495 +0800	update by push
+65d770bf944631b7e1abf88ac9d3414e82778cd0 4a59270a96cdd948452466af1d280d059e4613a6 cfnew-main <cfnew-main@example.com> 1763570584 +0800	update by push
+4a59270a96cdd948452466af1d280d059e4613a6 431e1cde2c2d1d169f51cfd3bc6f7edba167b2bf cfnew-main <cfnew-main@example.com> 1763609450 +0800	update by push
